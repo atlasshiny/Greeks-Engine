@@ -1,6 +1,6 @@
 #include "models/BSMModel.hpp"
-#include "normcdf.hpp"
-#include "normpdf.hpp"
+#include "math/normcdf.hpp"
+#include "math/normpdf.hpp"
 #include "Greeks.hpp"
 #include <cmath>
 
