@@ -1,7 +1,7 @@
 #pragma once
-#include "Greeks.hpp"
+#include "IModel.hpp"
 
-class BSMModel {
+class BSMModel : public IModel {
 public:
     // Constructor
     BSMModel(double S, double K, double T, double r, double sigma);

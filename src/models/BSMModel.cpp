@@ -1,4 +1,4 @@
-#include "BSMModel.hpp"
+#include "models/BSMModel.hpp"
 #include "normcdf.hpp"
 #include "normpdf.hpp"
 #include "Greeks.hpp"
