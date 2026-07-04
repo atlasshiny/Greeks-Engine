@@ -6,12 +6,16 @@ project(GreeksEngine LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(CUDAToolkit QUIET)
+# find_package(CUDAToolkit QUIET)
 
-if(CUDAToolkit_FOUND)
-    enable_language(CUDA)
-    set(CMAKE_CUDA_ARCHITECTURES native)
-endif()
+# if(CUDAToolkit_FOUND)
+#     enable_language(CUDA)
+#     set(CMAKE_CUDA_ARCHITECTURES native)
+
+#     message("CUDA found; Building GPU and CPU")
+# else()
+#     message("No CUDA found; Building CPU only")
+# endif()
 
 include(FetchContent)
 
