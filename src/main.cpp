@@ -4,11 +4,23 @@
 
 int main() {
     // Example parameters for the BSM model
-    double S = 100.0;   // Spot price
-    double K = 100.0;   // Strike price
-    double T = 1.0;     // Time to maturity in years
-    double r = 0.05;    // Risk-free interest rate
-    double sigma = 0.2; // Volatility of the underlying asset
+    double S;     // Spot price
+    double K;     // Strike price
+    double T;     // Time to maturity in years
+    double r;     // Risk-free interest rate
+    double sigma; // Volatility of the underlying asset
+
+    // Get user input for the parameters
+    std::cout << "Enter Spot Price (S): ";
+    std::cin >> S;
+    std::cout << "Enter Strike Price (K): ";
+    std::cin >> K;
+    std::cout << "Enter Time to Maturity (T in years): ";
+    std::cin >> T;
+    std::cout << "Enter Risk-Free Interest Rate (r): ";
+    std::cin >> r;
+    std::cout << "Enter Volatility (sigma): ";
+    std::cin >> sigma;
 
     // Create an instance of the BSMModel
     BSMModel bsm(S, K, T, r, sigma);
