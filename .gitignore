@@ -1,0 +1,63 @@
+.vscode/
+.vs/
+build/
+bin/
+out/
+cmake-build*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+install_manifest.txt
+
+# Object files, libraries, executables
+*.o
+*.obj
+*.lo
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+*.exe
+*.out
+
+# Debug and profiler files
+*.pdb
+*.ilk
+*.ipch
+*.suo
+*.ncb
+*.sdf
+*.VC.db
+*.VC.opendb
+*.opendb
+
+# Coverage
+*.gcno
+*.gcda
+coverage/
+
+# Editor/backup files
+*~
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# Logs and archives
+*.log
+*.zip
+*.tar.gz
+*.tgz
+*.7z
+
+# Misc
+*.user
+*.userosscache
+*.userprefs
+*.pyc
+
+# Visual Studio/IDE files
+*.vcxproj*
+*.sln
