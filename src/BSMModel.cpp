@@ -7,11 +7,11 @@ BSMModel::BSMModel(double S, double K, double T, double r, double sigma)
     : S(S), K(K), T(T), r(r), sigma(sigma) {}
 
 double BSMModel::callPrice() const {
-    return S * std::exp(-r * T) * normcdf(d1()) - K * std::exp(-r * T) * normcdf(d2());
+    return S * normcdf(d1()) - K * std::exp(-r * T) * normcdf(d2());
 }
 
 double BSMModel::putPrice() const {
-    return K * std::exp(-r * T) * normcdf(-d2()) - S * std::exp(-r * T) * normcdf(-d1());
+    return K * std::exp(-r * T) * normcdf(-d2()) - S * normcdf(-d1());
 }
 
 double BSMModel::d1() const {
