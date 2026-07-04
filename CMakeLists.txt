@@ -26,18 +26,11 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-# BSM model library
-add_library(BSMLib 
-    src/models/BSMModel.cpp
-)
-target_include_directories(BSMLib PUBLIC include)
-
 # Main Executable
 add_executable(GreeksEngine 
     src/main.cpp
 )
 target_include_directories(GreeksEngine PRIVATE include)
-target_link_libraries(GreeksEngine PRIVATE BSMLib)
 
 # Tests
 enable_testing()
@@ -46,8 +39,9 @@ add_executable(GreeksEngineTests
     tests/bsm_tests.cpp
 )
 
+target_include_directories(GreeksEngineTests PRIVATE include)
+
 target_link_libraries(GreeksEngineTests PRIVATE
-    BSMLib
     GTest::gtest_main   
 )
 
