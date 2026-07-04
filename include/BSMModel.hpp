@@ -1,4 +1,5 @@
 #pragma once
+#include "Greeks.hpp"
 
 class BSMModel {
 public:
@@ -10,6 +11,12 @@ public:
 
     // Method to calculate the price of a put option
     double putPrice() const;
+
+    // Method to calculate the Greeks for a call option
+    Greeks callGreeks() const;
+
+    // Method to calculate the Greeks for a put option
+    Greeks putGreeks() const;
 
 private:
     double S; // Spot price
@@ -23,4 +30,13 @@ private:
 
     // Helper method to calculate d2
     double d2() const;
+
+    // Helper method to calculate greeks for both call and put options (delta, gamma, vega, theta, rho)
+    // This helper specifically calculates the common Greeks for both call and put options (delta, gamma, vega, rho)
+    void calculateCommonGreeks(bool isCall, double d1_val, double d2_val, double pdf_d1, Greeks& greeks) const;
+    
+    // This helper specifically calculates the theta for both call and put options
+    void calculateCallTheta(double d1_val, double d2_val, double pdf_d1, Greeks& greeks) const;
+    void calculatePutTheta(double d1_val, double d2_val, double pdf_d1, Greeks& greeks) const;
+
 };
