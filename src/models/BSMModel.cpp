@@ -11,14 +11,14 @@ double BSMModel::callPrice() const {
     double d1_val = d1();
     double d2_val = d2(d1_val);
 
-    return S * normcdf(d1_val) - K * std::exp(-r * T) * normcdf(d2_val);
+    return S * MathUtils::normcdf(d1_val) - K * std::exp(-r * T) * MathUtils::normcdf(d2_val);
 }
 
 double BSMModel::putPrice() const {
     double d1_val = d1();
     double d2_val = d2(d1_val);
 
-    return K * std::exp(-r * T) * normcdf(-d2_val) - S * normcdf(-d1_val);
+    return K * std::exp(-r * T) * MathUtils::normcdf(-d2_val) - S * MathUtils::normcdf(-d1_val);
 }
 
 double BSMModel::d1() const {
@@ -34,9 +34,9 @@ double BSMModel::d2(double d1_val) const {
 void BSMModel::calculateCommonGreeks(bool isCall, double d1_val, double d2_val, double pdf_d1, Greeks& greeks) const {
     // Delta
     if (isCall) {
-        greeks.delta = normcdf(d1_val);
+        greeks.delta = MathUtils::normcdf(d1_val);
     } else {
-        greeks.delta = normcdf(d1_val) - 1;
+        greeks.delta = MathUtils::normcdf(d1_val) - 1;
     }
 
     // Gamma
@@ -47,18 +47,18 @@ void BSMModel::calculateCommonGreeks(bool isCall, double d1_val, double d2_val, 
 
     // Rho
     if (isCall) {
-        greeks.rho = K * T * std::exp(-r * T) * normcdf(d2_val);
+        greeks.rho = K * T * std::exp(-r * T) * MathUtils::normcdf(d2_val);
     } else {
-        greeks.rho = -K * T * std::exp(-r * T) * normcdf(-d2_val);
+        greeks.rho = -K * T * std::exp(-r * T) * MathUtils::normcdf(-d2_val);
     }
 }
 
 void BSMModel::calculateCallTheta(double d1_val, double d2_val, double pdf_d1, Greeks& greeks) const {
-    greeks.theta = (-S * pdf_d1 * sigma) / (2 * std::sqrt(T)) - r * K * std::exp(-r * T) * normcdf(d2_val);
+    greeks.theta = (-S * pdf_d1 * sigma) / (2 * std::sqrt(T)) - r * K * std::exp(-r * T) * MathUtils::normcdf(d2_val);
 }
 
 void BSMModel::calculatePutTheta(double d1_val, double d2_val, double pdf_d1, Greeks& greeks) const {
-    greeks.theta = (-S * pdf_d1 * sigma) / (2 * std::sqrt(T)) + r * K * std::exp(-r * T) * normcdf(-d2_val);
+    greeks.theta = (-S * pdf_d1 * sigma) / (2 * std::sqrt(T)) + r * K * std::exp(-r * T) * MathUtils::normcdf(-d2_val);
 }
 
 Greeks BSMModel::callGreeks() const {
@@ -66,7 +66,7 @@ Greeks BSMModel::callGreeks() const {
 
     double d1_val = d1();
     double d2_val = d2(d1_val);
-    double pdf_d1 = normpdf(d1_val);
+    double pdf_d1 = MathUtils::normpdf(d1_val);
 
     calculateCommonGreeks(true, d1_val, d2_val, pdf_d1, greeks);
     calculateCallTheta(d1_val, d2_val, pdf_d1, greeks);
@@ -79,7 +79,7 @@ Greeks BSMModel::putGreeks() const {
 
     double d1_val = d1();
     double d2_val = d2(d1_val);
-    double pdf_d1 = normpdf(d1_val);
+    double pdf_d1 = MathUtils::normpdf(d1_val);
 
     calculateCommonGreeks(false, d1_val, d2_val, pdf_d1, greeks);
     calculatePutTheta(d1_val, d2_val, pdf_d1, greeks);
