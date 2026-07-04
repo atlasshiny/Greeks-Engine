@@ -1,20 +1,25 @@
 #include "BSMModel.hpp"
+#include "normcdf.hpp"
+#include <cmath>
+#include <math.h>
 
 BSMModel::BSMModel(double S, double K, double T, double r, double sigma)
     : S(S), K(K), T(T), r(r), sigma(sigma) {}
 
 double BSMModel::callPrice() const {
-    // Implementation for call option price
+    return S * std::exp(-r * T) * normcdf(d1()) - K * std::exp(-r * T) * normcdf(d2());
 }
 
 double BSMModel::putPrice() const {
-    // Implementation for put option price
+    return K * std::exp(-r * T) * normcdf(-d2()) - S * std::exp(-r * T) * normcdf(-d1());
 }
 
 double BSMModel::d1() const {
-    // Implementation for d1
+    double numerator = std::log(S / K) + (r + 0.5 * sigma * sigma) * T;
+    double denominator = sigma * std::sqrt(T);
+    return numerator / denominator;
 }
 
 double BSMModel::d2() const {
-    // Implementation for d2
+    return d1() - sigma * std::sqrt(T);
 }
