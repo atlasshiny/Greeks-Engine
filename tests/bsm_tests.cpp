@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "BSMModel.hpp"
+#include "models/BSMModel.hpp"
 #include "Greeks.hpp"
 
 TEST(BSMModelTest, CallPrice) {

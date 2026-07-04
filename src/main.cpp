@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "BSMModel.hpp"
+#include "models/BSMModel.hpp"
 
 int main() {
     // Example parameters for the BSM model

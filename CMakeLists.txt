@@ -17,14 +17,13 @@ FetchContent_MakeAvailable(googletest)
 
 # BSM model library
 add_library(BSMLib 
-    src/BSMModel.cpp
+    src/models/BSMModel.cpp
 )
 target_include_directories(BSMLib PUBLIC include)
 
 # Main Executable
 add_executable(GreeksEngine 
     src/main.cpp
-    src/BSMModel.cpp
 )
 target_include_directories(GreeksEngine PRIVATE include)
 target_link_libraries(GreeksEngine PRIVATE BSMLib)
