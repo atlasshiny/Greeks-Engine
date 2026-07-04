@@ -29,7 +29,7 @@ private:
     double d1() const;
 
     // Helper method to calculate d2
-    double d2() const;
+    double d2(double d1_val) const;
 
     // Helper method to calculate greeks for both call and put options (delta, gamma, vega, theta, rho)
     // This helper specifically calculates the common Greeks for both call and put options (delta, gamma, vega, rho)

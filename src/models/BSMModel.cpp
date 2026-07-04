@@ -8,11 +8,17 @@ BSMModel::BSMModel(double S, double K, double T, double r, double sigma)
     : S(S), K(K), T(T), r(r), sigma(sigma) {}
 
 double BSMModel::callPrice() const {
-    return S * normcdf(d1()) - K * std::exp(-r * T) * normcdf(d2());
+    double d1_val = d1();
+    double d2_val = d2(d1_val);
+
+    return S * normcdf(d1_val) - K * std::exp(-r * T) * normcdf(d2_val);
 }
 
 double BSMModel::putPrice() const {
-    return K * std::exp(-r * T) * normcdf(-d2()) - S * normcdf(-d1());
+    double d1_val = d1();
+    double d2_val = d2(d1_val);
+
+    return K * std::exp(-r * T) * normcdf(-d2_val) - S * normcdf(-d1_val);
 }
 
 double BSMModel::d1() const {
@@ -21,8 +27,8 @@ double BSMModel::d1() const {
     return numerator / denominator;
 }
 
-double BSMModel::d2() const {
-    return d1() - sigma * std::sqrt(T);
+double BSMModel::d2(double d1_val) const {
+    return d1_val - sigma * std::sqrt(T);
 }
 
 void BSMModel::calculateCommonGreeks(bool isCall, double d1_val, double d2_val, double pdf_d1, Greeks& greeks) const {
@@ -59,7 +65,7 @@ Greeks BSMModel::callGreeks() const {
     Greeks greeks;
 
     double d1_val = d1();
-    double d2_val = d2();
+    double d2_val = d2(d1_val);
     double pdf_d1 = normpdf(d1_val);
 
     calculateCommonGreeks(true, d1_val, d2_val, pdf_d1, greeks);
@@ -72,7 +78,7 @@ Greeks BSMModel::putGreeks() const {
     Greeks greeks;
 
     double d1_val = d1();
-    double d2_val = d2();
+    double d2_val = d2(d1_val);
     double pdf_d1 = normpdf(d1_val);
 
     calculateCommonGreeks(false, d1_val, d2_val, pdf_d1, greeks);
