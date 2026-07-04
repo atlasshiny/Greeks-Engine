@@ -23,16 +23,17 @@ add_executable(GreeksEngine
 target_include_directories(GreeksEngine PRIVATE include)
 
 # Tests
-# enable_testing()
+enable_testing()
 
-# add_executable(GreeksEngineTests
-#     tests/bsm_test.cpp
-# )
+add_executable(GreeksEngineTests
+    src/BSMModel.cpp # temporary inclusion so tests compile
+    tests/bsm_tests.cpp
+)
 
-# target_link_libraries(GreeksEngineTests PRIVATE
-#     GTest::gtest_main  
-#     Threads::Threads   
-# )
+target_link_libraries(GreeksEngineTests PRIVATE
+    GTest::gtest_main   
+)
+target_include_directories(GreeksEngineTests PRIVATE include) # temporary inclusion so tests compile
 
-# include(GoogleTest)
-# gtest_discover_tests(OrderBookTests)
+include(GoogleTest)
+gtest_discover_tests(GreeksEngineTests)
