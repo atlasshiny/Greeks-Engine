@@ -3,6 +3,7 @@
 #include "models/BSMModel.hpp"
 #include "Option.hpp"
 #include "Greeks.hpp"
+#include "gpu/error_checking.cuh"
 #include <cuda_runtime.h>
 
 // Forward declaration
@@ -27,6 +28,9 @@ void launchGreeksKernel(const Option* h_options, Greeks* h_results, int n) {
     // Launch Kernel on GPU
     computeGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_results, n);
 
+    // Check for errors after launching the kernel
+    CUDA_CHECK(cudaGetLastError());
+
     // Copy results back to host
     cudaMemcpy(h_results, d_results, n * sizeof(Greeks), cudaMemcpyDeviceToHost);
 
@@ -36,7 +40,7 @@ void launchGreeksKernel(const Option* h_options, Greeks* h_results, int n) {
 }
 
 int main() {
-    int n = 1000; // Number of options to process
+    int n = 10000000; // Number of options to process
     std::vector<Option> options(n, {100.0, 100.0, 1.0, 0.05, 0.2, 0});
     std::vector<Greeks> results(n);
 
