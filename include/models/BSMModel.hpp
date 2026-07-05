@@ -14,7 +14,7 @@
 class BSMModel {
 public:
     // Constructor
-    BSMModel(double S, double K, double T, double r, double sigma) 
+    HOST_DEVICE BSMModel(double S, double K, double T, double r, double sigma) 
         : S(S), K(K), T(T), r(r), sigma(sigma) {};
 
     // Method to calculate the price of a call option
