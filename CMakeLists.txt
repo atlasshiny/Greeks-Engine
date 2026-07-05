@@ -20,11 +20,17 @@ endif()
 include(FetchContent)
 
 FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/refs/heads/main.zip
+    googletest
+    URL https://github.com/google/googletest/archive/refs/heads/main.zip
 )
 
-FetchContent_MakeAvailable(googletest)
+FetchContent_Declare(
+    pybind11
+    GIT_REPOSITORY https://github.com/pybind/pybind11
+    GIT_TAG v3.0.4
+)
+
+FetchContent_MakeAvailable(googletest pybind11)
 
 # Main Executables
 
