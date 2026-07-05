@@ -26,11 +26,22 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-# Main Executable
-add_executable(GreeksEngine 
+# Main Executables
+
+# CPU Executable
+add_executable(GreeksEngineCPU 
     src/main.cpp
 )
-target_include_directories(GreeksEngine PRIVATE include)
+target_include_directories(GreeksEngineCPU PRIVATE include)
+
+# GPU Executable
+# if(CUDAToolkit_FOUND)
+#     add_executable(GreeksEngineGPU
+#         src/main.cu
+#     )
+
+#     target_link_libraries(GreeksEngineGPU PRIVATE include)
+# endif()
 
 # Tests
 enable_testing()
