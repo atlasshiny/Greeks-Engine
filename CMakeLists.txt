@@ -6,16 +6,16 @@ project(GreeksEngine LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# find_package(CUDAToolkit QUIET)
+find_package(CUDAToolkit QUIET)
 
-# if(CUDAToolkit_FOUND)
-#     enable_language(CUDA)
-#     set(CMAKE_CUDA_ARCHITECTURES native)
+if(CUDAToolkit_FOUND)
+    enable_language(CUDA)
+    set(CMAKE_CUDA_ARCHITECTURES native)
 
-#     message("CUDA found; Building GPU and CPU")
-# else()
-#     message("No CUDA found; Building CPU only")
-# endif()
+    message("CUDA found; Building GPU and CPU")
+else()
+    message("No CUDA found; Building CPU only")
+endif()
 
 include(FetchContent)
 
@@ -35,13 +35,14 @@ add_executable(GreeksEngineCPU
 target_include_directories(GreeksEngineCPU PRIVATE include)
 
 # GPU Executable
-# if(CUDAToolkit_FOUND)
-#     add_executable(GreeksEngineGPU
-#         src/main.cu
-#     )
+if(CUDAToolkit_FOUND)
+    add_executable(GreeksEngineGPU
+        src/GreeksKernel.cu
+        src/main.cu
+    )
 
-#     target_link_libraries(GreeksEngineGPU PRIVATE include)
-# endif()
+    target_include_directories(GreeksEngineGPU PRIVATE include)
+endif()
 
 # Tests
 enable_testing()
