@@ -2,6 +2,7 @@
 #include "models/BSMModel.hpp"
 #include "Option.hpp"
 #include "Greeks.hpp"
+#include "gpu/error_checking.cuh"
 
 // The kernel that executes the code on the GPU
 __global__ void computeGreeksKernel(const Option* options, Greeks* results, int n) {
@@ -17,4 +18,34 @@ __global__ void computeGreeksKernel(const Option* options, Greeks* results, int 
             results[i] = model.putGreeks();
         }
     }
+}
+
+// The Bridge Function: Orchestrates memory and execution
+void launchGreeksKernel(const Option* h_options, Greeks* h_results, int n) {
+    Option *d_options;
+    Greeks *d_results;
+
+    // Allocate memory on GPU
+    cudaMalloc(&d_options, n * sizeof(Option));
+    cudaMalloc(&d_results, n * sizeof(Greeks));
+
+    // Copy data to GPU
+    cudaMemcpy(d_options, h_options, n * sizeof(Option), cudaMemcpyHostToDevice);
+
+    // Calculate grid dimensions
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock;
+
+    // Launch Kernel on GPU
+    computeGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_results, n);
+
+    // Check for errors after launching the kernel
+    CUDA_CHECK(cudaGetLastError());
+
+    // Copy results back to host
+    cudaMemcpy(h_results, d_results, n * sizeof(Greeks), cudaMemcpyDeviceToHost);
+
+    // Free GPU memory
+    cudaFree(d_options);
+    cudaFree(d_results);
 }
