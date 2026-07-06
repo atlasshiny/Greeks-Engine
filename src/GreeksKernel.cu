@@ -2,6 +2,7 @@
 #include "models/BSMModel.hpp"
 #include "Option.hpp"
 #include "Greeks.hpp"
+#include "gpu/GreeksKernel.cuh"
 #include "gpu/error_checking.cuh"
 
 // The kernel that executes the code on the GPU

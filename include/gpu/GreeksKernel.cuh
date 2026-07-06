@@ -1,0 +1,9 @@
+#pragma once
+#include "Option.hpp"
+#include "Greeks.hpp"
+
+// The kernel that executes the code on the GPU
+__global__ void computeGreeksKernel(const Option* options, Greeks* results, int n);
+
+// The Bridge Function: Orchestrates memory and execution
+void launchGreeksKernel(const Option* h_options, Greeks* h_results, int n);
