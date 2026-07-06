@@ -26,12 +26,6 @@ FetchContent_Declare(
 )
 
 FetchContent_Declare(
-    pybind11
-    GIT_REPOSITORY https://github.com/pybind/pybind11
-    GIT_TAG v3.0.4
-)
-
-FetchContent_Declare(
     googlebenchmark
     GIT_REPOSITORY https://github.com/google/benchmark
     GIT_TAG v1.9.5
@@ -39,7 +33,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(
     googletest 
-    pybind11 
     googlebenchmark
 )
 
