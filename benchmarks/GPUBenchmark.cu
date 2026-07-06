@@ -9,8 +9,10 @@ static void BM_GPU_BSM(benchmark::State& state) {
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
+    int n = static_cast<int>(state.range()); // Get the number of test cases from the benchmark state
+
     // WARM-UP BEFORE BENCHMARKING
-    const int warmup_size = 1000;
+    constexpr int warmup_size = 1000;
     BenchmarkBatch data = generateBenchmarkBatch(warmup_size);
 
     launchGreeksKernel(data.options.data(), data.results.data(), warmup_size);
@@ -18,9 +20,7 @@ static void BM_GPU_BSM(benchmark::State& state) {
 
     for (auto _ : state) {
         // Generate test inputs
-        int n = 1000;
-
-        BenchmarkBatch data = generateBenchmarkBatch(n); // Generate 1000 test cases
+        BenchmarkBatch data = generateBenchmarkBatch(n); // Generate n test cases
 
         // Record CUDA start
         cudaDeviceSynchronize();
@@ -43,6 +43,6 @@ static void BM_GPU_BSM(benchmark::State& state) {
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
-}
-BENCHMARK(BM_GPU_BSM)->UseManualTime(); //This macro registers the benchmark and forces the use of the cudaEvent time
+}//This macro registers the benchmark, sets the range for the data, and forces the use of the cudaEvent time
+BENCHMARK(BM_GPU_BSM)->Range(100, 10000000)->UseManualTime(); 
 BENCHMARK_MAIN();

@@ -3,9 +3,12 @@
 #include <benchmark/benchmark.h>
 
 static void BM_CPU_BSM(benchmark::State& state) {
+
+    int n = static_cast<int>(state.range()); // Get the number of test cases from the benchmark state
+
     for (auto _ : state) {
         // Generate test inputs
-        BenchmarkBatch data = generateBenchmarkBatch(1000); // Generate 1000 test cases
+        BenchmarkBatch data = generateBenchmarkBatch(n); // Generate n test cases
 
         // Run the BSM model on each option and store the results
         for (size_t i = 0; i < data.options.size(); ++i) {
@@ -19,5 +22,6 @@ static void BM_CPU_BSM(benchmark::State& state) {
         }
     }
 }
-BENCHMARK(BM_CPU_BSM); // This macro registers the test
+
+BENCHMARK(BM_CPU_BSM)->Range(100, 10000000);
 BENCHMARK_MAIN();
