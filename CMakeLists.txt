@@ -21,7 +21,8 @@ include(FetchContent)
 
 FetchContent_Declare(
     googletest
-    URL https://github.com/google/googletest/archive/refs/heads/main.zip
+    GIT_REPOSITORY https://github.com/google/googletest
+    GIT_TAG v1.17.0
 )
 
 FetchContent_Declare(
@@ -30,9 +31,17 @@ FetchContent_Declare(
     GIT_TAG v3.0.4
 )
 
-FetchContent_MakeAvailable(googletest pybind11)
+FetchContent_Declare(
+    googlebenchmark
+    GIT_REPOSITORY https://github.com/google/benchmark
+    GIT_TAG v1.9.5
+)
 
-# Main Executables
+FetchContent_MakeAvailable(
+    googletest 
+    pybind11 
+    googlebenchmark
+)
 
 # CPU Executable
 add_executable(GreeksEngineCPU 
@@ -49,6 +58,9 @@ if(CUDAToolkit_FOUND)
 
     target_include_directories(GreeksEngineGPU PRIVATE include)
 endif()
+
+# Benchmarking CMakeList
+add_subdirectory(benchmarks)
 
 # Tests
 enable_testing()
