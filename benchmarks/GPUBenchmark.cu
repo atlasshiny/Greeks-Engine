@@ -29,10 +29,10 @@ static void BM_GPU_BSM(benchmark::State& state) {
     cudaMalloc(&d_options, n * sizeof(Option));
     cudaMalloc(&d_results, n * sizeof(Greeks));
 
-    for (auto _ : state) {
-        // Generate test inputs and copy it to the GPU
-        BenchmarkBatch data = generateBenchmarkBatch(n); // Generate n test cases
+    // Generate test inputs (Still need to be copied to GPU)
+    BenchmarkBatch data = generateBenchmarkBatch(n); // Generate n test cases
 
+    for (auto _ : state) {
         // Record copy start
         cudaEventRecord(start_copy, 0);
 
