@@ -1,0 +1,6 @@
+# Used for plotting benchmark results
+pandas
+numpy
+matplotlib
+seaborn
+os
