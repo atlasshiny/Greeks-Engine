@@ -15,9 +15,9 @@ static void BM_GPU_BSM(benchmark::State& state) {
 
     // WARM-UP BEFORE BENCHMARKING
     constexpr int warmup_size = 1000;
-    BenchmarkBatch data = generateBenchmarkBatch(warmup_size);
+    BenchmarkBatch warmup_data = generateBenchmarkBatch(warmup_size);
 
-    launchGreeksKernel(data.options.data(), data.results.data(), warmup_size);
+    launchGreeksKernel(warmup_data.options.data(), warmup_data.results.data(), warmup_size);
     cudaDeviceSynchronize(); // Ensure the warmup fully completes
 
     // Assign the memory outside the lauchGreeksKernel method to benchmark JUST the calculations
