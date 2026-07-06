@@ -64,3 +64,4 @@ coverage/
 
 # Generated benchmark data
 benchmarks/*_results.csv
+benchmarks/plots
