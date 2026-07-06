@@ -43,6 +43,10 @@ FetchContent_MakeAvailable(
     googlebenchmark
 )
 
+# Disable Google Benchmark testing for faster build times
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+
 # CPU Executable
 add_executable(GreeksEngineCPU 
     src/main.cpp
