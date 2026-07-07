@@ -1,5 +1,10 @@
 # Greeks Engine
 
+![C++](https://img.shields.io/badge/C%2B%2B-20-00599C?style=for-the-badge&logo=cplusplus&logoColor=white)
+![CUDA](https://img.shields.io/badge/Language-CUDA-green?style=for-the-badge&logo=nvidia&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+
 A GPU-accelerated option pricing library in C++20. Implements the Black-Scholes-Merton model for European options, computing prices and all five major Greeks (Δ, Γ, ν, θ, ρ) on both CPU and CUDA GPU from a single codebase.
 
 ## Features
