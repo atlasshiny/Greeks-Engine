@@ -1,7 +1,9 @@
 #pragma once
 #include "Greeks.hpp"
+#include "Option.hpp"
 #include "math/normcdf.hpp"
 #include "math/normpdf.hpp"
+#include "models/IPricingModel.hpp"
 #include <cmath>
 
 // GPU macro for CUDA compatibility
@@ -11,55 +13,27 @@
     #define HOST_DEVICE
 #endif
 
-class BSMModel {
+class BSMModel : public IPricingModel {
 public:
     // Constructor
     HOST_DEVICE BSMModel(double S, double K, double T, double r, double sigma) 
         : S(S), K(K), T(T), r(r), sigma(sigma) {};
 
-    // Method to calculate the price of a call option
-    HOST_DEVICE inline double callPrice() const {
-        double d1_val = d1();
-        double d2_val = d2(d1_val);
+    HOST_DEVICE inline double price(int optionType) const override {
+        if (optionType == 0) {
+            return callPrice();
+        } else {
+            return putPrice();
+        }
+    };
 
-        return S * MathUtils::normcdf(d1_val) - K * std::exp(-r * T) * MathUtils::normcdf(d2_val);
-    }
-
-    // Method to calculate the price of a put option
-    HOST_DEVICE inline double putPrice() const {
-        double d1_val = d1();
-        double d2_val = d2(d1_val);
-
-        return K * std::exp(-r * T) * MathUtils::normcdf(-d2_val) - S * MathUtils::normcdf(-d1_val);
-    }
-
-    // Method to calculate the Greeks for a call option
-    HOST_DEVICE inline Greeks callGreeks() const {
-        Greeks greeks;
-
-        double d1_val = d1();
-        double d2_val = d2(d1_val);
-        double pdf_d1 = MathUtils::normpdf(d1_val);
-
-        calculateCommonGreeks(true, d1_val, d2_val, pdf_d1, greeks);
-        calculateCallTheta(d1_val, d2_val, pdf_d1, greeks);
-
-        return greeks;
-    }
-
-    // Method to calculate the Greeks for a put option
-    HOST_DEVICE inline Greeks putGreeks() const {
-        Greeks greeks;
-
-        double d1_val = d1();
-        double d2_val = d2(d1_val);
-        double pdf_d1 = MathUtils::normpdf(d1_val);
-
-        calculateCommonGreeks(false, d1_val, d2_val, pdf_d1, greeks);
-        calculatePutTheta(d1_val, d2_val, pdf_d1, greeks);
-
-        return greeks;
-    }
+    HOST_DEVICE inline Greeks calculateGreeks(int optionType) const override {
+        if (optionType == 0) {
+            return callGreeks();
+        } else {
+            return putGreeks();
+        }
+    };
 
 private:
     double S; // Spot price
@@ -111,6 +85,50 @@ private:
 
     HOST_DEVICE inline void calculatePutTheta(double d1_val, double d2_val, double pdf_d1, Greeks& greeks) const {
         greeks.theta = (-S * pdf_d1 * sigma) / (2 * std::sqrt(T)) + r * K * std::exp(-r * T) * MathUtils::normcdf(-d2_val);
+    }
+
+    // Method to calculate the price of a call option
+    HOST_DEVICE inline double callPrice() const {
+        double d1_val = d1();
+        double d2_val = d2(d1_val);
+
+        return S * MathUtils::normcdf(d1_val) - K * std::exp(-r * T) * MathUtils::normcdf(d2_val);
+    }
+
+    // Method to calculate the price of a put option
+    HOST_DEVICE inline double putPrice() const {
+        double d1_val = d1();
+        double d2_val = d2(d1_val);
+
+        return K * std::exp(-r * T) * MathUtils::normcdf(-d2_val) - S * MathUtils::normcdf(-d1_val);
+    }
+
+    // Method to calculate the Greeks for a call option
+    HOST_DEVICE inline Greeks callGreeks() const {
+        Greeks greeks;
+
+        double d1_val = d1();
+        double d2_val = d2(d1_val);
+        double pdf_d1 = MathUtils::normpdf(d1_val);
+
+        calculateCommonGreeks(true, d1_val, d2_val, pdf_d1, greeks);
+        calculateCallTheta(d1_val, d2_val, pdf_d1, greeks);
+
+        return greeks;
+    }
+
+    // Method to calculate the Greeks for a put option
+    HOST_DEVICE inline Greeks putGreeks() const {
+        Greeks greeks;
+
+        double d1_val = d1();
+        double d2_val = d2(d1_val);
+        double pdf_d1 = MathUtils::normpdf(d1_val);
+
+        calculateCommonGreeks(false, d1_val, d2_val, pdf_d1, greeks);
+        calculatePutTheta(d1_val, d2_val, pdf_d1, greeks);
+
+        return greeks;
     }
 
 };

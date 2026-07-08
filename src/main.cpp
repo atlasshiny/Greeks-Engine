@@ -26,8 +26,8 @@ int main() {
     BSMModel bsm(S, K, T, r, sigma);
 
     // Calculate and display the call and put option prices
-    double callPrice = bsm.callPrice();
-    double putPrice = bsm.putPrice();
+    double callPrice = bsm.price(0); // 0 for call option
+    double putPrice = bsm.price(1); // 1 for put option
 
     std::cout << "Call Option Price: " << callPrice << std::endl;
     std::cout << "Put Option Price: " << putPrice << std::endl;

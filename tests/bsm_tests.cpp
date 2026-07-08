@@ -10,7 +10,7 @@ TEST(BSMModelTest, CallPrice) {
     double sigma = 0.2; // Volatility of the underlying asset
 
     BSMModel bsm(S, K, T, r, sigma);
-    double callPrice = bsm.callPrice();
+    double callPrice = bsm.price(0); // 0 for call option
 
     double expectedCallPrice = 10.4506; 
 
@@ -25,7 +25,7 @@ TEST(BSMModelTest, PutPrice) {
     double sigma = 0.2; // Volatility of the underlying asset
 
     BSMModel bsm(S, K, T, r, sigma);
-    double putPrice = bsm.putPrice();
+    double putPrice = bsm.price(1); // 1 for put option
 
     double expectedPutPrice = 5.5735; 
 
@@ -40,7 +40,7 @@ TEST(BSMModelTest, CallGreeks) {
     double sigma = 0.2; // Volatility of the underlying asset
 
     BSMModel bsm(S, K, T, r, sigma);
-    Greeks callGreeks = bsm.callGreeks();
+    Greeks callGreeks = bsm.calculateGreeks(0); // 0 for call option
 
     EXPECT_NEAR(callGreeks.delta, 0.6368, 1e-4);
     EXPECT_NEAR(callGreeks.gamma, 0.0188, 1e-4);

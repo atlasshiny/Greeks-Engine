@@ -13,11 +13,8 @@ __global__ void computeGreeksKernel(const Option* options, Greeks* results, int 
         BSMModel model(options[i].S, options[i].K, options[i].T, options[i].r, options[i].sigma);
         
         // Calculate Greeks using the header-file code
-        if (options[i].type == 0) {
-            results[i] = model.callGreeks();
-        } else {
-            results[i] = model.putGreeks();
-        }
+        results[i] = model.calculateGreeks(options[i].type);
+
     }
 }
 

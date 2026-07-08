@@ -12,11 +12,7 @@ static void BM_CPU_BSM(benchmark::State& state) {
 
     for (size_t i = 0; i < warmup_data.options.size(); ++i) {
         BSMModel model(warmup_data.options[i].S, warmup_data.options[i].K, warmup_data.options[i].T, warmup_data.options[i].r, warmup_data.options[i].sigma);
-        if (warmup_data.options[i].type == 0) {
-            warmup_data.results[i] = model.callGreeks();
-        } else {
-            warmup_data.results[i] = model.putGreeks();
-        }
+        model.calculateGreeks(warmup_data.options[i].type); // Calculate the Greeks (not stored, just for warm-up)
     }
 
     // Generate test inputs
@@ -27,11 +23,7 @@ static void BM_CPU_BSM(benchmark::State& state) {
         for (size_t i = 0; i < data.options.size(); ++i) {
             BSMModel model(data.options[i].S, data.options[i].K, data.options[i].T, data.options[i].r, data.options[i].sigma);
 
-            if (data.options[i].type == 0) {
-                data.results[i] = model.callGreeks();
-            } else {
-                data.results[i] = model.putGreeks();
-            }
+            model.calculateGreeks(data.options[i].type); // Calculate the Greeks (not stored, just for benchmarking)
         }
     }
 }
