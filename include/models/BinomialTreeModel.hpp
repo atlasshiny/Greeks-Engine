@@ -2,13 +2,7 @@
 #include "models/IPricingModel.hpp"
 #include <cmath>
 #include <vector>
-
-// GPU macro for CUDA compatibility
-#ifdef __CUDACC__
-    #define HOST_DEVICE __host__ __device__
-#else
-    #define HOST_DEVICE
-#endif
+#include "macros.hpp"
 
 // BinomialTreeModel class implementing the binomial option pricing model
 // Currently, it cannot be used with CUDA due to the use of std::vector. A custom data structure will be needed for CUDA compatibility.

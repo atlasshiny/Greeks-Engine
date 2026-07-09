@@ -1,12 +1,6 @@
 #pragma once
 #include <cmath>
-
-// GPU macro for CUDA compatibility
-#ifdef __CUDACC__
-    #define HOST_DEVICE __host__ __device__
-#else
-    #define HOST_DEVICE
-#endif
+#include "macros.hpp"
 
 namespace MathUtils {
     HOST_DEVICE inline double normcdf(double x) {

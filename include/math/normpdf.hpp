@@ -1,13 +1,7 @@
 #pragma once
 #include <cmath>
 #include <numbers>
-
-// GPU macro for CUDA compatibility
-#ifdef __CUDACC__
-    #define HOST_DEVICE __host__ __device__
-#else
-    #define HOST_DEVICE
-#endif
+#include "macros.hpp"
 
 // Define PI as a constant using std::numbers::pi
 inline constexpr double PI = std::numbers::pi;

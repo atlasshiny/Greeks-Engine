@@ -4,14 +4,8 @@
 #include "math/normcdf.hpp"
 #include "math/normpdf.hpp"
 #include "models/IPricingModel.hpp"
+#include "macros.hpp"
 #include <cmath>
-
-// GPU macro for CUDA compatibility
-#ifdef __CUDACC__
-    #define HOST_DEVICE __host__ __device__
-#else
-    #define HOST_DEVICE
-#endif
 
 class BSMModel : public IPricingModel {
 public:

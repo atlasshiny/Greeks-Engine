@@ -1,12 +1,6 @@
 #pragma once
 #include "Greeks.hpp"
-
-// GPU macro for CUDA compatibility
-#ifdef __CUDACC__
-    #define HOST_DEVICE __host__ __device__
-#else
-    #define HOST_DEVICE
-#endif
+#include "macros.hpp"
 
 class IPricingModel {
 public:
