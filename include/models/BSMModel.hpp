@@ -72,11 +72,11 @@ private:
     }
     
     // This helper specifically calculates the theta for both call and put options
-    HOST_DEVICE inline void calculateCallTheta(double d1_val, double d2_val, double pdf_d1, Greeks& greeks) const {
+    HOST_DEVICE inline void calculateCallTheta(double d2_val, double pdf_d1, Greeks& greeks) const {
         greeks.theta = (-S * pdf_d1 * sigma) / (2 * std::sqrt(T)) - r * K * std::exp(-r * T) * MathUtils::normcdf(d2_val);
     }
 
-    HOST_DEVICE inline void calculatePutTheta(double d1_val, double d2_val, double pdf_d1, Greeks& greeks) const {
+    HOST_DEVICE inline void calculatePutTheta(double d2_val, double pdf_d1, Greeks& greeks) const {
         greeks.theta = (-S * pdf_d1 * sigma) / (2 * std::sqrt(T)) + r * K * std::exp(-r * T) * MathUtils::normcdf(-d2_val);
     }
 
@@ -105,7 +105,7 @@ private:
         double pdf_d1 = MathUtils::normpdf(d1_val);
 
         calculateCommonGreeks(true, d1_val, d2_val, pdf_d1, greeks);
-        calculateCallTheta(d1_val, d2_val, pdf_d1, greeks);
+        calculateCallTheta(d2_val, pdf_d1, greeks);
 
         return greeks;
     }
@@ -119,7 +119,7 @@ private:
         double pdf_d1 = MathUtils::normpdf(d1_val);
 
         calculateCommonGreeks(false, d1_val, d2_val, pdf_d1, greeks);
-        calculatePutTheta(d1_val, d2_val, pdf_d1, greeks);
+        calculatePutTheta(d2_val, pdf_d1, greeks);
 
         return greeks;
     }
