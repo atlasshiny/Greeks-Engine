@@ -21,9 +21,23 @@ public:
     };
 
     // Method to calculate the Greeks of an option using finite differences
-    HOST_DEVICE inline Greeks calculateGreeks(int optionType) const {
-        // Implement the Greeks calculation for the binomial model here using finite differences.
-        return Greeks();
+    HOST_DEVICE inline Greeks calculateGreeks(int optionType, double* buffer, double h) const {
+        // Delta
+        double delta = calculateDelta(optionType, buffer, h);
+
+        // Gamma
+        double gamma = calculateGamma(optionType, buffer, h);
+
+        // Vega
+        double vega = calculateVega(optionType, buffer, h);
+
+        // Theta
+        double theta = calculateTheta(optionType, buffer, h);
+
+        // Rho
+        double rho = calculateRho(optionType, buffer, h);
+
+        return Greeks{delta, gamma, vega, theta, rho};
     };
 
 private:
@@ -65,6 +79,60 @@ private:
             }
         }
         return buffer[0];
+    }
+
+    // Method to calculate the first order finite difference (specifically using central difference) for Greeks calculation
+    template <typename Function>
+    HOST_DEVICE inline double firstCentralDifference(Function f, double x, int optionType, double* buffer, double delta) const {
+        double h = delta;
+        return (f(x + h) - f(x - h)) / (2.0 * h);
+    }
+
+    // Method to calculate the second order finite difference (specifically using central difference) for Greeks calculation
+    template <typename Function>
+    HOST_DEVICE inline double secondCentralDifference(Function f, double x, int optionType, double* buffer, double delta) const {
+        double h = delta;
+        return (f(x + h) - (2.0 * f(x)) + f(x - h)) / (h * h);
+    }
+
+    HOST_DEVICE inline double calculateDelta(int optionType, double* buffer, double delta) const {
+        // Use a lambda function to capture the current state and compute the price for different stock prices
+        auto priceFunc = HOST_DEVICE [this, optionType, buffer](double S_val) {
+            return this->price_internal(optionType, buffer, S_val, sigma, r, q, T);
+        };
+        return firstCentralDifference(priceFunc, S, optionType, buffer, delta);
+    }
+
+    HOST_DEVICE inline double calculateGamma(int optionType, double* buffer, double delta) const {
+        // Use a lambda function to capture the current state and compute the price for different stock prices
+        auto priceFunc = HOST_DEVICE [this, optionType, buffer](double S_val) {
+            return this->price_internal(optionType, buffer, S_val, sigma, r, q, T);
+        };
+        return secondCentralDifference(priceFunc, S, optionType, buffer, delta);
+    }
+
+    HOST_DEVICE inline double calculateVega(int optionType, double* buffer, double delta) const {
+        // Use a lambda function to capture the current state and compute the price for different volatilities
+        auto priceFunc = HOST_DEVICE [this, optionType, buffer](double sigma_val) {
+            return this->price_internal(optionType, buffer, S, sigma_val, r, q, T);
+        };
+        return firstCentralDifference(priceFunc, sigma, optionType, buffer, delta);
+    }
+
+    HOST_DEVICE inline double calculateTheta(int optionType, double* buffer, double delta) const {
+        // Use a lambda function to capture the current state and compute the price for different times to expiration
+        auto priceFunc = HOST_DEVICE [this, optionType, buffer](double T_val) {
+            return this->price_internal(optionType, buffer, S, sigma, r, q, T_val);
+        };
+        return firstCentralDifference(priceFunc, T, optionType, buffer, delta);
+    }
+
+    HOST_DEVICE inline double calculateRho(int optionType, double* buffer, double delta) const {
+        // Use a lambda function to capture the current state and compute the price for different interest rates
+        auto priceFunc = HOST_DEVICE [this, optionType, buffer](double r_val) {
+            return this->price_internal(optionType, buffer, S, sigma, r_val, q, T);
+        };
+        return firstCentralDifference(priceFunc, r, optionType, buffer, delta);
     }
 
 };
