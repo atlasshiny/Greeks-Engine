@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "gpu/GreeksKernel.cuh"
+#include "gpu/BSMKernel.cuh"
 #include "models/BSMModel.hpp"
 #include "Option.hpp"
 #include "Greeks.hpp"

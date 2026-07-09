@@ -1,7 +1,7 @@
 # Benchmark Executable
 if(CUDAToolkit_FOUND)
     add_executable(gpu_benchmark
-        ../src/gpu/GreeksKernel.cu # consider finding a better linking solution in the future
+        ../src/gpu/BSMKernel.cu # consider finding a better linking solution in the future
         GPUBenchmark.cu
     )
 

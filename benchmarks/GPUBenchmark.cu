@@ -1,6 +1,6 @@
 #include "models/BSMModel.hpp"
 #include "setup.hpp"
-#include "gpu/GreeksKernel.cuh"
+#include "gpu/BSMKernel.cuh"
 #include <benchmark/benchmark.h>
 #include <cuda_runtime.h>
 

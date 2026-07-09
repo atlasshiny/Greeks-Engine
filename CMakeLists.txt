@@ -49,7 +49,7 @@ target_include_directories(GreeksEngineCPU PRIVATE include)
 # GPU Executable
 if(CUDAToolkit_FOUND)
     add_executable(GreeksEngineGPU
-        src/gpu/GreeksKernel.cu
+        src/gpu/BSMKernel.cu
         src/main.cu
     )
 
