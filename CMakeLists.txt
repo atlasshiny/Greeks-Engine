@@ -64,6 +64,7 @@ enable_testing()
 
 add_executable(GreeksEngineTests
     tests/bsm_tests.cpp
+    tests/binomial_tree_tests.cpp
 )
 
 target_include_directories(GreeksEngineTests PRIVATE include)
