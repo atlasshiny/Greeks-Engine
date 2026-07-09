@@ -3,6 +3,7 @@
 #include "models/BinomialTreeModel.hpp"
 #include <cuda_runtime.h>
 
+// The kernel that executes the Greeks code on the GPU
 __global__ void computeGreeksKernel(const Option* options, const MarketParams* mktparams, Greeks* results, int n_steps, int n_options) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n_options) {
@@ -15,6 +16,7 @@ __global__ void computeGreeksKernel(const Option* options, const MarketParams* m
     }
 };
 
+// The Bridge Function: Orchestrates memory and execution
 void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams, Greeks* h_results, int n_steps, int n_options) {
     Option *d_options;
     MarketParams *d_mktparams;
@@ -48,6 +50,7 @@ void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams
     CUDA_CHECK(cudaFree(d_results));
 }
 
+// The kernel that executes the pricing code on the GPU
 __global__ void computePricingKernel(const Option* options, const MarketParams* mktparams, double* results, int n_steps, int n_options, double* buffer) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n_options) {
@@ -74,7 +77,7 @@ void launchPricingKernel(const Option* h_options, const MarketParams* h_mktparam
     // Allocate memory on GPU
     CUDA_CHECK(cudaMalloc(&d_options, n_options * sizeof(Option)));
     CUDA_CHECK(cudaMalloc(&d_mktparams, n_options * sizeof(MarketParams)));
-    CUDA_CHECK(cudaMalloc(&d_buffer, n_options * (n_steps + 1)));
+    CUDA_CHECK(cudaMalloc(&d_buffer, n_options * (n_steps + 1) * sizeof(double)));
     CUDA_CHECK(cudaMalloc(&d_results, n_options * sizeof(double)));
 
     // Copy data to GPU
@@ -96,6 +99,7 @@ void launchPricingKernel(const Option* h_options, const MarketParams* h_mktparam
 
     // Free GPU memory
     CUDA_CHECK(cudaFree(d_options));
+    CUDA_CHECK(cudaFree(d_mktparams));
     CUDA_CHECK(cudaFree(d_buffer));
     CUDA_CHECK(cudaFree(d_results));
 }
