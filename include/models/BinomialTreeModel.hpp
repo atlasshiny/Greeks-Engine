@@ -124,7 +124,7 @@ private:
         auto priceFunc = [this, optionType, buffer](double T_val) {
             return this->price_internal(optionType, buffer, S, sigma, r, q, T_val);
         };
-        return firstCentralDifference(priceFunc, T, optionType, buffer, delta);
+        return -firstCentralDifference(priceFunc, T, optionType, buffer, delta);
     }
 
     HOST_DEVICE inline double calculateRho(int optionType, double* buffer, double delta) const {
