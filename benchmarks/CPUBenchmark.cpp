@@ -11,7 +11,7 @@ static void BM_CPU_BSM(benchmark::State& state) {
     BenchmarkBatch warmup_data = generateBenchmarkBatch(warmup_size);
 
     for (size_t i = 0; i < warmup_data.options.size(); ++i) {
-        BSMModel model(warmup_data.options[i].S, warmup_data.options[i].K, warmup_data.options[i].T, warmup_data.options[i].r, warmup_data.options[i].sigma);
+        BSMModel model(warmup_data.mktparams[i].S, warmup_data.options[i].K, warmup_data.options[i].T, warmup_data.mktparams[i].r, warmup_data.mktparams[i].sigma);
         model.calculateGreeks(warmup_data.options[i].type); // Calculate the Greeks (not stored, just for warm-up)
     }
 
@@ -21,7 +21,7 @@ static void BM_CPU_BSM(benchmark::State& state) {
     for (auto _ : state) {
         // Run the BSM model on each option and store the results
         for (size_t i = 0; i < data.options.size(); ++i) {
-            BSMModel model(data.options[i].S, data.options[i].K, data.options[i].T, data.options[i].r, data.options[i].sigma);
+            BSMModel model(data.mktparams[i].S, data.options[i].K, data.options[i].T, data.mktparams[i].r, data.mktparams[i].sigma);
 
             model.calculateGreeks(data.options[i].type); // Calculate the Greeks (not stored, just for benchmarking)
         }
