@@ -50,6 +50,7 @@ target_include_directories(GreeksEngineCPU PRIVATE include)
 if(CUDAToolkit_FOUND)
     add_executable(GreeksEngineGPU
         src/gpu/BSMKernel.cu
+        src/gpu/BinomialTreeKernel.cu
         src/main.cu
     )
 

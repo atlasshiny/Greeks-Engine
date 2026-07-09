@@ -21,7 +21,6 @@ void BSMModelImplementation() {
     Greeks putGreeks = bsm.calculateGreeks(1); // 1 for put option
 
     std::cout << "Call Option Price: " << callPrice << std::endl;
-    std::cout << "Put Option Price: " << putPrice << std::endl;
     std::cout << "Call Option Greeks:" << std::endl;
     std::cout << "Delta: " << callGreeks.delta << std::endl;
     std::cout << "Gamma: " << callGreeks.gamma << std::endl;
@@ -31,6 +30,7 @@ void BSMModelImplementation() {
 
     std::cout << std::endl;
 
+    std::cout << "Put Option Price: " << putPrice << std::endl;
     std::cout << "Put Option Greeks:" << std::endl;
     std::cout << "Delta: " << putGreeks.delta << std::endl;
     std::cout << "Gamma: " << putGreeks.gamma << std::endl;
@@ -62,11 +62,27 @@ void BinomialTreeImplementation() {
 
     // Calculate and display the call and put option prices
     double callPrice = binomial.price(0, buffer.data()); // 0 for call option
+    Greeks callGreeks = binomial.calculateGreeks(0, buffer.data(), 0.01); // 0 for call option, h=0.01 for finite difference
     double putPrice = binomial.price(1, buffer.data());  // 1 for put option
+    Greeks putGreeks = binomial.calculateGreeks(1, buffer.data(), 0.01); // 1 for put option, h=0.01 for finite difference
 
     std::cout << "Binomial Tree Model:" << std::endl;
     std::cout << "Call Option Price: " << callPrice << std::endl;
+    std::cout << "Delta: " << callGreeks.delta << std::endl;
+    std::cout << "Gamma: " << callGreeks.gamma << std::endl;
+    std::cout << "Vega: " << callGreeks.vega << std::endl;
+    std::cout << "Theta: " << callGreeks.theta << std::endl;
+    std::cout << "Rho: " << callGreeks.rho << std::endl;
+
+    std::cout << std::endl;
+
     std::cout << "Put Option Price: " << putPrice << std::endl;
+    std::cout << "Put Option Greeks:" << std::endl;
+    std::cout << "Delta: " << putGreeks.delta << std::endl;
+    std::cout << "Gamma: " << putGreeks.gamma << std::endl;
+    std::cout << "Vega: " << putGreeks.vega << std::endl;
+    std::cout << "Theta: " << putGreeks.theta << std::endl;
+    std::cout << "Rho: " << putGreeks.rho << std::endl;
 
     // When Greek calculations are implemented, call the calculateGreeks method similarly to the BSM model.
 }
