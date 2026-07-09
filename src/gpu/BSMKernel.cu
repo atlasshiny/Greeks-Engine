@@ -76,6 +76,7 @@ void launchPricingKernel(const Option* h_options, const MarketParams* h_mktparam
 
     // Copy data to GPU
     CUDA_CHECK(cudaMemcpy(d_options, h_options, n * sizeof(Option), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_mktparams, h_mktparams, n * sizeof(MarketParams), cudaMemcpyHostToDevice));
 
     // Calculate grid dimensions
     int threadsPerBlock = 256;
@@ -92,5 +93,6 @@ void launchPricingKernel(const Option* h_options, const MarketParams* h_mktparam
 
     // Free GPU memory
     CUDA_CHECK(cudaFree(d_options));
+    CUDA_CHECK(cudaFree(d_mktparams));
     CUDA_CHECK(cudaFree(d_results));
 }
