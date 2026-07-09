@@ -3,17 +3,16 @@
 #include "Option.hpp"
 #include "math/normcdf.hpp"
 #include "math/normpdf.hpp"
-#include "models/IPricingModel.hpp"
 #include "macros.hpp"
 #include <cmath>
 
-class BSMModel : public IPricingModel {
+class BSMModel {
 public:
     // Constructor
     HOST_DEVICE BSMModel(double S, double K, double T, double r, double sigma) 
         : S(S), K(K), T(T), r(r), sigma(sigma) {};
 
-    HOST_DEVICE inline double price(int optionType) const override {
+    HOST_DEVICE inline double price(int optionType) const {
         if (optionType == 0) {
             return callPrice();
         } else {
@@ -21,7 +20,7 @@ public:
         }
     };
 
-    HOST_DEVICE inline Greeks calculateGreeks(int optionType) const override {
+    HOST_DEVICE inline Greeks calculateGreeks(int optionType) const {
         if (optionType == 0) {
             return callGreeks();
         } else {
