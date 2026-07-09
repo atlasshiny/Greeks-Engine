@@ -4,14 +4,18 @@
 #include <cuda_runtime.h>
 
 // The kernel that executes the Greeks code on the GPU
-__global__ void computeGreeksKernel(const Option* options, const MarketParams* mktparams, Greeks* results, int n_steps, int n_options) {
+__global__ void computeGreeksKernel(const Option* options, const MarketParams* mktparams, Greeks* results, int n_steps, int n_options, double* buffer) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n_options) {
         // Instantiate the header-only BinomialTreeModel on the GPU thread
         BinomialTreeModel model(mktparams[i].S, options[i].K, options[i].T, mktparams[i].r, mktparams[i].sigma, mktparams[i].q, n_steps, options[i].isAmerican);
         
+        // Slice the buffer per thread so that it is n_steps + 1 size.
+        // Because 'i' is unique to each thread, it ensures that the buffer slice isn't slicing something that is already passed into another thread
+        double* buffer_slice = &buffer[i * (n_steps + 1)];
+
         // Calculate Greeks using the header-file code (when it is implemented)
-        results[i] = model.calculateGreeks(options[i].type);
+        results[i] = model.calculateGreeks(options[i].type, buffer_slice, 0.001);
 
     }
 };
@@ -20,11 +24,13 @@ __global__ void computeGreeksKernel(const Option* options, const MarketParams* m
 void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams, Greeks* h_results, int n_steps, int n_options) {
     Option *d_options;
     MarketParams *d_mktparams;
+    double *d_buffer;
     Greeks *d_results;
 
     // Allocate memory on GPU
     CUDA_CHECK(cudaMalloc(&d_options, n_options * sizeof(Option)));
     CUDA_CHECK(cudaMalloc(&d_mktparams, n_options * sizeof(MarketParams)));
+    CUDA_CHECK(cudaMalloc(&d_buffer, n_options * (n_steps + 1) * sizeof(double)));
     CUDA_CHECK(cudaMalloc(&d_results, n_options * sizeof(Greeks)));
 
     // Copy data to GPU
@@ -36,7 +42,7 @@ void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams
     int blocksPerGrid = (n_options + threadsPerBlock - 1) / threadsPerBlock;
 
     // Launch Kernel on GPU
-    computeGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n_steps, n_options);
+    computeGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n_steps, n_options, d_buffer);
 
     // Check for errors after launching the kernel
     CUDA_CHECK(cudaGetLastError());
@@ -47,6 +53,7 @@ void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams
     // Free GPU memory
     CUDA_CHECK(cudaFree(d_options));
     CUDA_CHECK(cudaFree(d_mktparams));
+    CUDA_CHECK(cudaFree(d_buffer));
     CUDA_CHECK(cudaFree(d_results));
 }
 
