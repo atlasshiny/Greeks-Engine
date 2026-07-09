@@ -61,7 +61,7 @@ private:
         // 1. Initialize terminal values at time T
         for (int j = 0; j <= N; ++j) {
             double S_T = S_val * std::pow(u, j) * std::pow(d, N - j);
-            buffer[j] = (optionType == 0) ? std::max(S_T - K, 0.0) : std::max(K - S_T, 0.0);
+            buffer[j] = (optionType == 0) ? fmax(S_T - K, 0.0) : fmax(K - S_T, 0.0);
         }
 
         // 2. Backward induction
@@ -73,8 +73,8 @@ private:
                 if (isAmerican) {
                     // For American options, check for early exercise
                     double S_curr = S_val * std::pow(u, j) * std::pow(d, i - j);
-                    double exerciseValue = (optionType == 0) ? std::max(S_curr - K, 0.0) : std::max(K - S_curr, 0.0);
-                    buffer[j] = std::max(buffer[j], exerciseValue);
+                    double exerciseValue = (optionType == 0) ? fmax(S_curr - K, 0.0) : fmax(K - S_curr, 0.0);
+                    buffer[j] = fmax(buffer[j], exerciseValue);
                 }
             }
         }
@@ -97,7 +97,7 @@ private:
 
     HOST_DEVICE inline double calculateDelta(int optionType, double* buffer, double delta) const {
         // Use a lambda function to capture the current state and compute the price for different stock prices
-        auto priceFunc = HOST_DEVICE [this, optionType, buffer](double S_val) {
+        auto priceFunc = [this, optionType, buffer](double S_val) {
             return this->price_internal(optionType, buffer, S_val, sigma, r, q, T);
         };
         return firstCentralDifference(priceFunc, S, optionType, buffer, delta);
@@ -105,7 +105,7 @@ private:
 
     HOST_DEVICE inline double calculateGamma(int optionType, double* buffer, double delta) const {
         // Use a lambda function to capture the current state and compute the price for different stock prices
-        auto priceFunc = HOST_DEVICE [this, optionType, buffer](double S_val) {
+        auto priceFunc = [this, optionType, buffer](double S_val) {
             return this->price_internal(optionType, buffer, S_val, sigma, r, q, T);
         };
         return secondCentralDifference(priceFunc, S, optionType, buffer, delta);
@@ -113,7 +113,7 @@ private:
 
     HOST_DEVICE inline double calculateVega(int optionType, double* buffer, double delta) const {
         // Use a lambda function to capture the current state and compute the price for different volatilities
-        auto priceFunc = HOST_DEVICE [this, optionType, buffer](double sigma_val) {
+        auto priceFunc = [this, optionType, buffer](double sigma_val) {
             return this->price_internal(optionType, buffer, S, sigma_val, r, q, T);
         };
         return firstCentralDifference(priceFunc, sigma, optionType, buffer, delta);
@@ -121,7 +121,7 @@ private:
 
     HOST_DEVICE inline double calculateTheta(int optionType, double* buffer, double delta) const {
         // Use a lambda function to capture the current state and compute the price for different times to expiration
-        auto priceFunc = HOST_DEVICE [this, optionType, buffer](double T_val) {
+        auto priceFunc = [this, optionType, buffer](double T_val) {
             return this->price_internal(optionType, buffer, S, sigma, r, q, T_val);
         };
         return firstCentralDifference(priceFunc, T, optionType, buffer, delta);
@@ -129,7 +129,7 @@ private:
 
     HOST_DEVICE inline double calculateRho(int optionType, double* buffer, double delta) const {
         // Use a lambda function to capture the current state and compute the price for different interest rates
-        auto priceFunc = HOST_DEVICE [this, optionType, buffer](double r_val) {
+        auto priceFunc = [this, optionType, buffer](double r_val) {
             return this->price_internal(optionType, buffer, S, sigma, r_val, q, T);
         };
         return firstCentralDifference(priceFunc, r, optionType, buffer, delta);
