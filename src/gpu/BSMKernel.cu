@@ -24,10 +24,12 @@ void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams
 
     // Allocate memory on GPU
     CUDA_CHECK(cudaMalloc(&d_options, n * sizeof(Option)));
+    CUDA_CHECK(cudaMalloc(&d_mktparams, n * sizeof(MarketParams)));
     CUDA_CHECK(cudaMalloc(&d_results, n * sizeof(Greeks)));
 
     // Copy data to GPU
     CUDA_CHECK(cudaMemcpy(d_options, h_options, n * sizeof(Option), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_mktparams, h_mktparams, n * sizeof(MarketParams), cudaMemcpyHostToDevice));
 
     // Calculate grid dimensions
     int threadsPerBlock = 256;
@@ -44,6 +46,7 @@ void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams
 
     // Free GPU memory
     CUDA_CHECK(cudaFree(d_options));
+    CUDA_CHECK(cudaFree(d_mktparams));
     CUDA_CHECK(cudaFree(d_results));
 }
 
