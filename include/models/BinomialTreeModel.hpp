@@ -17,33 +17,7 @@ public:
     // Method to calculate the price of an option using the binomial tree model
     // A buffer is passed to avoid dynamic memory allocation in CUDA. The buffer should be of size N+1.
     HOST_DEVICE inline double price(int optionType, double* buffer) const {
-        double dt = T / N; // Change of T with respect to the number of steps
-        double u = std::exp(sigma * std::sqrt(dt)); // Up factor
-        double d = 1.0 / u; // Down factor
-        double p = (std::exp((r - q) * dt) - d) / (u - d); // Risk-neutral probability
-        double discount = std::exp(-r * dt); // Discount factor for one time step
-
-        // 1. Initialize terminal values at time T
-        for (int j = 0; j <= N; ++j) {
-            double S_T = S * std::pow(u, j) * std::pow(d, N - j);
-            buffer[j] = (optionType == 0) ? std::max(S_T - K, 0.0) : std::max(K - S_T, 0.0);
-        }
-
-        // 2. Backward induction
-        for (int i = N - 1; i >= 0; --i) {
-            for (int j = 0; j <= i; ++j) {
-                // Risk-neutral expectation
-                buffer[j] = discount * (p * buffer[j + 1] + (1 - p) * buffer[j]);
-                
-                if (isAmerican) {
-                    // For American options, check for early exercise
-                    double S_curr = S * std::pow(u, j) * std::pow(d, i - j);
-                    double exerciseValue = (optionType == 0) ? std::max(S_curr - K, 0.0) : std::max(K - S_curr, 0.0);
-                    buffer[j] = std::max(buffer[j], exerciseValue);
-                }
-            }
-        }
-        return buffer[0];
+        return price_internal(optionType, buffer, S, sigma, r, q, T);
     };
 
     // Method to calculate the Greeks of an option using finite differences
@@ -61,4 +35,36 @@ private:
     double sigma;  // Volatility of the underlying asset
     double q;      // Dividend yield
     bool isAmerican; // Flag to indicate if the option is American or European
+
+    // Internal method to calculate the price of an option and can also take in modified parameters for Greeks calculation.
+    HOST_DEVICE inline double price_internal(int optionType, double* buffer, double S_val, double sigma_val, double r_val, double q_val, double T_val) const {
+        double dt = T_val / N; // Change of T with respect to the number of steps
+        double u = std::exp(sigma_val * std::sqrt(dt)); // Up factor
+        double d = 1.0 / u; // Down factor
+        double p = (std::exp((r_val - q_val) * dt) - d) / (u - d); // Risk-neutral probability
+        double discount = std::exp(-r_val * dt); // Discount factor for one time step
+
+        // 1. Initialize terminal values at time T
+        for (int j = 0; j <= N; ++j) {
+            double S_T = S_val * std::pow(u, j) * std::pow(d, N - j);
+            buffer[j] = (optionType == 0) ? std::max(S_T - K, 0.0) : std::max(K - S_T, 0.0);
+        }
+
+        // 2. Backward induction
+        for (int i = N - 1; i >= 0; --i) {
+            for (int j = 0; j <= i; ++j) {
+                // Risk-neutral expectation
+                buffer[j] = discount * (p * buffer[j + 1] + (1 - p) * buffer[j]);
+                
+                if (isAmerican) {
+                    // For American options, check for early exercise
+                    double S_curr = S_val * std::pow(u, j) * std::pow(d, i - j);
+                    double exerciseValue = (optionType == 0) ? std::max(S_curr - K, 0.0) : std::max(K - S_curr, 0.0);
+                    buffer[j] = std::max(buffer[j], exerciseValue);
+                }
+            }
+        }
+        return buffer[0];
+    }
+
 };
