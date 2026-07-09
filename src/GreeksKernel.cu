@@ -25,7 +25,7 @@ __global__ void computePriceKernel(const Option* options, double* results, int n
         // Instantiate the header-only BSMModel on the GPU thread
         BSMModel model(options[i].S, options[i].K, options[i].T, options[i].r, options[i].sigma);
         
-        // Calculate Greeks using the header-file code
+        // Calculate price using the header-file code
         results[i] = model.price(options[i].type);
 
     }
