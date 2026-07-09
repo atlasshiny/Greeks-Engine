@@ -2,14 +2,18 @@
 #include <vector>
 #include "gpu/BSMKernel.cuh"
 #include "models/BSMModel.hpp"
+#include "models/BinomialTreeModel.hpp"
 #include "Option.hpp"
 #include "Greeks.hpp"
 #include "MarketParameters.hpp"
 #include <cuda_runtime.h>
 
 // Forward declarations
-__global__ void computeGreeksKernel(const Option* options, Greeks* results, int n);
-void launchGreeksKernel(const Option* h_options, const MarketParams h_mktparams, Greeks* h_results, int n);
+void launchBSMGreeksKernel(const Option* h_options, const MarketParams* h_mktparams, Greeks* h_results, int n);
+
+void BSMModelImplementation(){
+
+}
 
 int main() {
     int n = 10000000; // Number of options to process
@@ -18,7 +22,7 @@ int main() {
     std::vector<Greeks> results(n);
 
     // Launch parallel computation on GPU
-    launchGreeksKernel(options.data(), mktparams.data(), results.data(), n);
+    launchBSMGreeksKernel(options.data(), mktparams.data(), results.data(), n);
 
     std::cout << "Successfully processed " << n << " options on the GPU." << std::endl;
     std::cout << "Delta of first option: " << results[0].delta << std::endl;

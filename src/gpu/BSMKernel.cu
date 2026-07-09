@@ -4,7 +4,7 @@
 #include "gpu/error_checking.cuh"
 
 // The kernel that executes the Greeks code on the GPU
-__global__ void computeGreeksKernel(const Option* options, const MarketParams* mktparams, Greeks* results, int n) {
+__global__ void computeBSMGreeksKernel(const Option* options, const MarketParams* mktparams, Greeks* results, int n) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n) {
         // Instantiate the header-only BSMModel on the GPU thread
@@ -17,7 +17,7 @@ __global__ void computeGreeksKernel(const Option* options, const MarketParams* m
 }
 
 // The Bridge Function: Orchestrates memory and execution
-void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams, Greeks* h_results, int n) {
+void launchBSMGreeksKernel(const Option* h_options, const MarketParams* h_mktparams, Greeks* h_results, int n) {
     Option *d_options;
     MarketParams *d_mktparams;
     Greeks *d_results;
@@ -36,7 +36,7 @@ void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams
     int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock;
 
     // Launch Kernel on GPU
-    computeGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n);
+    computeBSMGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n);
 
     // Check for errors after launching the kernel
     CUDA_CHECK(cudaGetLastError());
@@ -51,7 +51,7 @@ void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams
 }
 
 // The kernel that executes the pricing code on the GPU
-__global__ void computePricingKernel(const Option* options, const MarketParams* mktparams, double* results, int n) {
+__global__ void computeBSMPricingKernel(const Option* options, const MarketParams* mktparams, double* results, int n) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n) {
         // Instantiate the header-only BSMModel on the GPU thread
@@ -64,7 +64,7 @@ __global__ void computePricingKernel(const Option* options, const MarketParams* 
 }
 
 // The Bridge Function: Orchestrates memory and execution
-void launchPricingKernel(const Option* h_options, const MarketParams* h_mktparams, double* h_results, int n) {
+void launchBSMPricingKernel(const Option* h_options, const MarketParams* h_mktparams, double* h_results, int n) {
     Option *d_options;
     MarketParams *d_mktparams;
     double *d_results;
@@ -83,7 +83,7 @@ void launchPricingKernel(const Option* h_options, const MarketParams* h_mktparam
     int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock;
 
     // Launch Kernel on GPU
-    computePricingKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n);
+    computeBSMPricingKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n);
 
     // Check for errors after launching the kernel
     CUDA_CHECK(cudaGetLastError());

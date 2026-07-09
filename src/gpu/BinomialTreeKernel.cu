@@ -4,7 +4,7 @@
 #include <cuda_runtime.h>
 
 // The kernel that executes the Greeks code on the GPU
-__global__ void computeGreeksKernel(const Option* options, const MarketParams* mktparams, Greeks* results, int n_steps, int n_options, double* buffer) {
+__global__ void computeBinomialGreeksKernel(const Option* options, const MarketParams* mktparams, Greeks* results, int n_steps, int n_options, double* buffer) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n_options) {
         // Instantiate the header-only BinomialTreeModel on the GPU thread
@@ -21,7 +21,7 @@ __global__ void computeGreeksKernel(const Option* options, const MarketParams* m
 };
 
 // The Bridge Function: Orchestrates memory and execution
-void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams, Greeks* h_results, int n_steps, int n_options) {
+void launchBinomialGreeksKernel(const Option* h_options, const MarketParams* h_mktparams, Greeks* h_results, int n_steps, int n_options) {
     Option *d_options;
     MarketParams *d_mktparams;
     double *d_buffer;
@@ -42,7 +42,7 @@ void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams
     int blocksPerGrid = (n_options + threadsPerBlock - 1) / threadsPerBlock;
 
     // Launch Kernel on GPU
-    computeGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n_steps, n_options, d_buffer);
+    computeBinomialGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n_steps, n_options, d_buffer);
 
     // Check for errors after launching the kernel
     CUDA_CHECK(cudaGetLastError());
@@ -58,7 +58,7 @@ void launchGreeksKernel(const Option* h_options, const MarketParams* h_mktparams
 }
 
 // The kernel that executes the pricing code on the GPU
-__global__ void computePricingKernel(const Option* options, const MarketParams* mktparams, double* results, int n_steps, int n_options, double* buffer) {
+__global__ void computeBinomialPricingKernel(const Option* options, const MarketParams* mktparams, double* results, int n_steps, int n_options, double* buffer) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n_options) {
         // Instantiate the header-only BinomialTreeModel on the GPU thread
@@ -75,7 +75,7 @@ __global__ void computePricingKernel(const Option* options, const MarketParams* 
 }
 
 // The Bridge Function: Orchestrates memory and execution
-void launchPricingKernel(const Option* h_options, const MarketParams* h_mktparams, double* h_results, int n_steps, int n_options) {
+void launchBinomialPricingKernel(const Option* h_options, const MarketParams* h_mktparams, double* h_results, int n_steps, int n_options) {
     Option *d_options;
     MarketParams *d_mktparams;
     double *d_buffer;
@@ -96,7 +96,7 @@ void launchPricingKernel(const Option* h_options, const MarketParams* h_mktparam
     int blocksPerGrid = (n_options + threadsPerBlock - 1) / threadsPerBlock;
 
     // Launch Kernel on GPU
-    computePricingKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n_steps, n_options, d_buffer);
+    computeBinomialPricingKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n_steps, n_options, d_buffer);
 
     // Check for errors after launching the kernel
     CUDA_CHECK(cudaGetLastError());

@@ -17,7 +17,7 @@ static void BM_GPU_BSM(benchmark::State& state) {
     constexpr int warmup_size = 1000;
     BenchmarkBatch warmup_data = generateBenchmarkBatch(warmup_size);
 
-    launchGreeksKernel(warmup_data.options.data(), warmup_data.mktparams.data(), warmup_data.results.data(), warmup_size);
+    launchBSMGreeksKernel(warmup_data.options.data(), warmup_data.mktparams.data(), warmup_data.results.data(), warmup_size);
     cudaDeviceSynchronize(); // Ensure the warmup fully completes
 
     // Assign the memory outside the lauchGreeksKernel method to benchmark JUST the calculations
@@ -59,7 +59,7 @@ static void BM_GPU_BSM(benchmark::State& state) {
         cudaEventRecord(start_compute, 0);
 
         // Run the raw kernel without the bridge function
-        computeGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n);
+        computeBSMGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n);
         
         // Ensure the calculations are done before stopping the time
         cudaDeviceSynchronize();
