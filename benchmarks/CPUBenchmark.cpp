@@ -47,7 +47,7 @@ static void BM_CPU_BinomialTreeGreeks(benchmark::State& state) {
 
     for (size_t i = 0; i < warmup_data.options.size(); ++i) {
         BinomialTreeModel model(warmup_data.mktparams[i].S, warmup_data.options[i].K, warmup_data.options[i].T, warmup_data.mktparams[i].r, warmup_data.mktparams[i].sigma, warmup_data.mktparams[i].q, warmup_steps, warmup_data.options[i].isAmerican);
-        model.calculateGreeks(warmup_data.options[i].type, warmup_buffer.data(), 0.01); // Calculate the Greeks (not stored, just for warm-up)
+        model.calculateGreeks(warmup_data.options[i].type, warmup_buffer.data(), 0.001); // Calculate the Greeks (not stored, just for warm-up)
     }
 
     // Generate test inputs

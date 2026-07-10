@@ -58,12 +58,14 @@ void BinomialTreeImplementation(int n_steps, int n_options){
     std::vector<Greeks> call_greek_results(n_options);
     std::vector<Greeks> put_greek_results(n_options);
 
+    double delta = 0.001;
+
     // Launch parallel computation on GPU
     launchBinomialPricingKernel(call_options.data(), mktparams.data(), call_price_results.data(), n_steps, n_options);
-    launchBinomialGreeksKernel(call_options.data(), mktparams.data(), call_greek_results.data(), n_steps, n_options);
+    launchBinomialGreeksKernel(call_options.data(), mktparams.data(), call_greek_results.data(), delta, n_steps, n_options);
 
     launchBinomialPricingKernel(put_options.data(), mktparams.data(), put_price_results.data(), n_steps, n_options);
-    launchBinomialGreeksKernel(put_options.data(), mktparams.data(), put_greek_results.data(), n_steps, n_options);
+    launchBinomialGreeksKernel(put_options.data(), mktparams.data(), put_greek_results.data(), delta, n_steps, n_options);
 
     std::cout << "Binomial Tree MODEL" << std::endl;
     std::cout << "Successfully processed " << n_options << " options on the GPU at " << n_steps << " steps." << std::endl;

@@ -4,7 +4,7 @@
 #include <cuda_runtime.h>
 
 // The kernel that executes the Greeks code on the GPU
-__global__ void computeBinomialGreeksKernel(const Option* options, const MarketParams* mktparams, Greeks* results, int n_steps, int n_options, double* buffer) {
+__global__ void computeBinomialGreeksKernel(const Option* options, const MarketParams* mktparams, Greeks* results, double delta, int n_steps, int n_options, double* buffer) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n_options) {
         // Instantiate the header-only BinomialTreeModel on the GPU thread
@@ -15,13 +15,13 @@ __global__ void computeBinomialGreeksKernel(const Option* options, const MarketP
         double* buffer_slice = &buffer[i * (n_steps + 1)];
 
         // Calculate Greeks using the header-file code (when it is implemented)
-        results[i] = model.calculateGreeks(options[i].type, buffer_slice, 0.001);
+        results[i] = model.calculateGreeks(options[i].type, buffer_slice, delta);
 
     }
 };
 
 // The Bridge Function: Orchestrates memory and execution
-void launchBinomialGreeksKernel(const Option* h_options, const MarketParams* h_mktparams, Greeks* h_results, int n_steps, int n_options) {
+void launchBinomialGreeksKernel(const Option* h_options, const MarketParams* h_mktparams, Greeks* h_results, double delta, int n_steps, int n_options) {
     Option *d_options;
     MarketParams *d_mktparams;
     double *d_buffer;
@@ -42,7 +42,7 @@ void launchBinomialGreeksKernel(const Option* h_options, const MarketParams* h_m
     int blocksPerGrid = (n_options + threadsPerBlock - 1) / threadsPerBlock;
 
     // Launch Kernel on GPU
-    computeBinomialGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n_steps, n_options, d_buffer);
+    computeBinomialGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, delta, n_steps, n_options, d_buffer);
 
     // Check for errors after launching the kernel
     CUDA_CHECK(cudaGetLastError());

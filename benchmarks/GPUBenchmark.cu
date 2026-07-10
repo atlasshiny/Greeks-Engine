@@ -110,7 +110,7 @@ static void BM_GPU_BinomialTree_Greeks(benchmark::State& state) {
     constexpr int warmup_step = 10;
     BenchmarkBatch warmup_data = generateBenchmarkBatch(warmup_size);
 
-    launchBinomialGreeksKernel(warmup_data.options.data(), warmup_data.mktparams.data(), warmup_data.greek_results.data(), warmup_step, warmup_size);
+    launchBinomialGreeksKernel(warmup_data.options.data(), warmup_data.mktparams.data(), warmup_data.greek_results.data(), 0.001, warmup_step, warmup_size);
     cudaDeviceSynchronize(); // Ensure the warmup fully completes
 
     // Assign the memory outside the lauchGreeksKernel method to benchmark JUST the calculations
@@ -154,7 +154,7 @@ static void BM_GPU_BinomialTree_Greeks(benchmark::State& state) {
         cudaEventRecord(start_compute, 0);
 
         // Run the raw kernel without the bridge function
-        computeBinomialGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n_steps, n_options, d_buffer);
+        computeBinomialGreeksKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, 0.001, n_steps, n_options, d_buffer);
         
         // Ensure the calculations are done before stopping the time
         cudaDeviceSynchronize();
