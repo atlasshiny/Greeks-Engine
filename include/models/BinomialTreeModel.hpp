@@ -21,6 +21,8 @@ public:
     };
 
     // Method to calculate the Greeks of an option using finite differences
+    // Note that the buffer is used to avoid dynamic memory allocation in CUDA. The buffer should be of size N+1.
+    // The h parameter is a small scale value used for finite difference calculations.
     HOST_DEVICE inline Greeks calculateGreeks(int optionType, double* buffer, double h) const {
         // Delta
         double delta = calculateDelta(optionType, buffer, h);
@@ -82,16 +84,19 @@ private:
     }
 
     // Method to calculate the first order finite difference (specifically using central difference) for Greeks calculation
+    // Note that delta scales the h value based on the current value of the parameter being perturbed (S, sigma, r, T) as a percent.
     template <typename Function>
     HOST_DEVICE inline double firstCentralDifference(Function f, double x, int optionType, double* buffer, double delta) const {
-        double h = delta;
+        double h = x * delta;
         return (f(x + h) - f(x - h)) / (2.0 * h);
     }
 
     // Method to calculate the second order finite difference (specifically using central difference) for Greeks calculation
+    // Note that delta scales the h value based on the current value of the parameter being perturbed (S, sigma, r, T) as a percent.
     template <typename Function>
     HOST_DEVICE inline double secondCentralDifference(Function f, double x, int optionType, double* buffer, double delta) const {
-        double h = delta;
+        delta = std::sqrt(delta); // Use the square root of delta for second order difference to maintain numerical stability
+        double h = x * delta;
         return (f(x + h) - (2.0 * f(x)) + f(x - h)) / (h * h);
     }
 
