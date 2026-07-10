@@ -158,7 +158,6 @@ BM_GPU_BinomialTree_Greeks/100000/manual_time 1276642578 ns   1281250000 ns     
 ### Benchmark Plots
 ![Performance Comparison BSM](diagrams/BSM/performance_pointplot.png)
 ![Performance Comparison BinomialTree](diagrams/BinomialTree/performance_pointplot.png)
-For a more in-depth benchmark review, visit the ![benchmarking document](benchmarks/benchmark.md).
 
 ## Notes
 
