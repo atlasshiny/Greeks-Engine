@@ -17,6 +17,7 @@ __global__ void computeBSMGreeksKernel(const Option* options, const MarketParams
 }
 
 // The Bridge Function: Orchestrates memory and execution
+// Ensure to use pinned memory for the host memory (the parameters being passed in) by using cudaHostAlloc()
 void launchBSMGreeksKernel(const Option* h_options, const MarketParams* h_mktparams, Greeks* h_results, int n) {
     Option *d_options;
     MarketParams *d_mktparams;
@@ -64,6 +65,7 @@ __global__ void computeBSMPricingKernel(const Option* options, const MarketParam
 }
 
 // The Bridge Function: Orchestrates memory and execution
+// Ensure to use pinned memory for the host memory (the parameters being passed in) by using cudaHostAlloc()
 void launchBSMPricingKernel(const Option* h_options, const MarketParams* h_mktparams, double* h_results, int n) {
     Option *d_options;
     MarketParams *d_mktparams;

@@ -21,9 +21,15 @@ static void BM_GPU_BSM_Greeks(benchmark::State& state) {
     BenchmarkBatch warmup_data = generateBenchmarkBatch(warmup_size);
 
     launchBSMGreeksKernel(warmup_data.options.data(), warmup_data.mktparams.data(), warmup_data.greek_results.data(), warmup_size);
-    cudaDeviceSynchronize(); // Ensure the warmup fully completes
 
     // Assign the memory outside the lauchGreeksKernel method to benchmark JUST the calculations
+    Option *h_options;
+    MarketParams *h_mktparams;
+    Greeks *h_results;
+
+    cudaHostAlloc((void**)&h_options, n * sizeof(Option), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&h_mktparams, n * sizeof(MarketParams), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&h_results, n * sizeof(Greeks), cudaHostAllocDefault);
 
     Option *d_options;
     MarketParams *d_mktparams;
@@ -34,16 +40,21 @@ static void BM_GPU_BSM_Greeks(benchmark::State& state) {
     cudaMalloc(&d_mktparams, n * sizeof(MarketParams));
     cudaMalloc(&d_results, n * sizeof(Greeks));
 
-    // Generate test inputs (Still need to be copied to GPU)
+    // Generate test inputs
     BenchmarkBatch data = generateBenchmarkBatch(n); // Generate n test cases
+
+    // Copy generated test inputs to the pinned memory
+    memcpy(h_options, data.options.data(), n * sizeof(Option));
+    memcpy(h_mktparams, data.mktparams.data(), n * sizeof(MarketParams));
+    memcpy(h_results, data.greek_results.data(), n * sizeof(Greeks));
 
     for (auto _ : state) {
         // Record copy start
         cudaEventRecord(start_copy, 0);
 
         // Copy memory from RAM to VRAM
-        cudaMemcpy(d_options, data.options.data(), n * sizeof(Option), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_mktparams, data.mktparams.data(), n *sizeof(MarketParams), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_options, h_options, n * sizeof(Option), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_mktparams, h_mktparams, n *sizeof(MarketParams), cudaMemcpyHostToDevice);
 
         // Record copy stop
         cudaEventRecord(stop_copy, 0);
@@ -86,6 +97,12 @@ static void BM_GPU_BSM_Greeks(benchmark::State& state) {
     cudaEventDestroy(start_compute);
     cudaEventDestroy(stop_compute);
 
+    // Free host memory
+    cudaFreeHost(h_options);
+    cudaFreeHost(h_mktparams);
+    cudaFreeHost(h_results);
+
+    // Free device memory
     cudaFree(d_options);
     cudaFree(d_mktparams);
     cudaFree(d_results);
