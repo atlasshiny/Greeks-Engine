@@ -5,15 +5,15 @@
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-A GPU-accelerated option pricing library in C++20. Implements the Black-Scholes-Merton model for European options, computing prices and all five major Greeks (Δ, Γ, ν, θ, ρ) on both CPU and CUDA GPU from a single codebase.
+A GPU-accelerated option pricing library in C++20. Implements the Black-Scholes-Merton model for European options and the Binomial Tree model for American options, computing prices and all five major Greeks (Δ, Γ, ν, θ, ρ) on both CPU and CUDA GPU from a single  header-only codebase.
 
 ## Features
 
-- Black-Scholes-Merton pricing for European calls and puts
-- All five major Greeks: delta, gamma, vega, theta, rho
-- Header-only architecture — one codebase compiles for CPU and GPU
-- CUDA batch kernel: each thread independently prices one option
-- CPU and GPU benchmarks via Google Benchmark (with `cudaEvent_t` timing)
+- Prices European calls and puts with the Black-Scholes-Merton model.
+- Prices European and American options with the binomial tree model.
+- Computes the major Greeks exposed by each model.
+- Provides CPU and GPU executable entry points from the same codebase.
+- Includes GoogleTest unit tests and Google Benchmark benchmarks.
 - CMake auto-detects CUDA; builds CPU-only if no GPU is found
 
 ## Project Structure
@@ -21,32 +21,45 @@ A GPU-accelerated option pricing library in C++20. Implements the Black-Scholes-
 ```
 Greeks-Engine/
 ├── include/
-│   ├── models/
-│   │   └── BSMModel.hpp        # Header-only BSM implementation (CPU + GPU)
+│   ├── Greeks.hpp
+│   ├── MarketParameters.hpp
+│   ├── Option.hpp
+│   ├── macros.hpp
 │   ├── math/
-│   │   ├── normcdf.hpp         # Normal CDF (MathUtils namespace)
-│   │   └── normpdf.hpp         # Normal PDF (MathUtils namespace)
-│   ├── gpu/
-│   │   ├── GreeksKernel.cuh    # Kernel declaration
-│   │   └── error_checking.cuh  # CUDA_CHECK macro
-│   ├── Option.hpp              # Option input struct
-│   └── Greeks.hpp              # Greeks output struct
+│   │   ├── normcdf.hpp
+│   │   └── normpdf.hpp
+│   ├── models/
+│   │   ├── BSMModel.hpp
+│   │   ├── BinomialTreeModel.hpp
+│   │   └── MonteCarloModel.hpp
+│   └── gpu/
+│       ├── BSMKernel.cuh
+│       ├── BinomialTreeKernel.cuh
+│       └── error_checking.cuh
 ├── src/
-│   ├── main.cpp                # CPU entry point
-│   ├── main.cu                 # GPU entry point
-│   └── GreeksKernel.cu         # Kernel + bridge function implementation
+│   ├── main.cpp
+│   ├── main.cu
+│   └── gpu/
+│       ├── BSMKernel.cu
+│       └── BinomialTreeKernel.cu
 ├── benchmarks/
-│   ├── CPUBenchmark.cpp        # Sequential CPU benchmark
-│   ├── GPUBenchmark.cu         # GPU benchmark with cudaEvent timing
-│   ├── setup.hpp               # Shared benchmark data generation
-│   └── plot.py                 # Plots benchmark output (*_results.csv)
-└── tests/
-    └── bsm_tests.cpp           # Unit tests (GoogleTest)
+│   ├── CPUBenchmark.cpp
+│   ├── GPUBenchmark.cu
+│   ├── plot.py
+│   ├── setup.hpp
+│   ├── cpu_results.csv
+│   └── gpu_results.csv
+├── tests/
+│   ├── bsm_tests.cpp
+│   └── binomial_tree_tests.cpp
+└── diagrams/
+    ├── BSM/
+    └── BinomialTree/
 ```
 
 ## Build
 
-**Requirements:** C++20 compiler, CMake 3.20+. CUDA Toolkit is optional — the build falls back to CPU-only if not found.
+***Requirements:**** C++20 compiler, CMake 3.20+. CUDA Toolkit is optional — the build falls back to CPU-only if not found.
 
 ```bash
 git clone https://github.com/atlasshiny/Greeks-Engine.git
@@ -56,63 +69,35 @@ cmake ..
 cmake --build . -j4
 ```
 
-This produces up to four executables depending on your environment:
+This produces up to five executables depending on your environment:
 
 | Executable | Description |
 |---|---|
-| `GreeksEngineCPU` | CPU pricing demo |
-| `GreeksEngineGPU` | GPU pricing demo (CUDA only) |
-| `GreeksEngineTests` | Unit test suite |
-| `cpu_benchmark` | Google Benchmark — sequential CPU |
-| `gpu_benchmark` | Google Benchmark — CUDA kernel (CUDA only) |
+| `GreeksEngineCPU` | CPU demo that prints BSM and binomial-tree outputs |
+| `GreeksEngineGPU` | CUDA demo that runs the batch GPU implementations |
+| `GreeksEngineTests` | GoogleTest suite for the pricing models |
+| `cpu_benchmark` | Google Benchmark target for sequential CPU pricing |
+| `gpu_benchmark` | Google Benchmark target for CUDA kernel GPU pricing |
 
-## Usage
+## Running
 
-### CPU
+The exact executable path depends on your CMake generator and build configuration. After building, run the demo targets from the build tree.
 
-```cpp
-#include "models/BSMModel.hpp"
+### CPU Demo
 
-// S=100, K=100, T=1yr, r=5%, sigma=20%
-BSMModel model(100.0, 100.0, 1.0, 0.05, 0.2);
+Runs the default BSM and binomial tree examples from [src/main.cpp](src/main.cpp).
 
-double call = model.callPrice();   // 10.4506
-double put  = model.putPrice();    //  5.5735
+### GPU Demo
 
-Greeks g = model.callGreeks();
-// g.delta = 0.6368
-// g.gamma = 0.0188
-// g.vega  = 37.524
-// g.theta = -6.414
-// g.rho   = 53.233
-```
+Runs the batch BSM and binomial tree examples from [src/main.cu](src/main.cu) when CUDA is available.
 
-### GPU (batch)
+### Tests
 
-```cpp
-#include "gpu/GreeksKernel.cuh"
-
-std::vector<Option> options(N, {100.0, 100.0, 1.0, 0.05, 0.2, 0});
-std::vector<Greeks> results(N);
-
-// Transfers to GPU, launches kernel, copies results back
-launchGreeksKernel(options.data(), results.data(), N);
-```
-
-`launchGreeksKernel` handles host-device memory management. The kernel instantiates `BSMModel` on each GPU thread — the `HOST_DEVICE` macro and header-only design make this possible without duplicating any pricing logic.
-
-## Design Notes
-
-**Why header-only?**
-CUDA requires that any function called from a `__device__` context is visible to `nvcc` at compile time. Moving `BSMModel` entirely into a header lets the same class compile for both CPU (`g++`) and GPU (`nvcc`) without code duplication.
-
-**Why `HOST_DEVICE` on every method?**
-The `__host__ __device__` qualifiers tell `nvcc` to emit both a CPU and a GPU version of each function. The `#ifdef __CUDACC__` guard makes the macro a no-op under a standard C++ compiler, so the headers remain clean for CPU-only builds.
-
-**Why `cudaEvent_t` for benchmarking?**
-Host-side timers (`std::chrono`) include synchronization overhead that inflates GPU measurements. `cudaEvent_t` records timestamps on the GPU's command stream, giving accurate kernel-only timing. The GPU benchmark also separates `cudaMemcpy` time from compute time so both costs are visible independently.
+Use CTest or the generated test executable from the build tree.
 
 ## Benchmarks
+The benchmark sources live in [benchmarks/CPUBenchmark.cpp](benchmarks/CPUBenchmark.cpp) and [benchmarks/GPUBenchmark.cu](benchmarks/GPUBenchmark.cu). The plotting helper is [benchmarks/plot.py](benchmarks/plot.py).
+
 The following results and plots were generated using an Intel i7-10700KF and RTX 5060 (8GB) on Windows 11
 
 ### CPU Benchmark
@@ -125,19 +110,25 @@ CPU Caches:
   L1 Instruction 32 KiB (x8)
   L2 Unified 256 KiB (x8)
   L3 Unified 16384 KiB (x1)
---------------------------------------------------------------
-Benchmark                    Time             CPU   Iterations
---------------------------------------------------------------
-BM_CPU_BSM/100            4729 ns         4688 ns       160000
-BM_CPU_BSM/512           23378 ns        23019 ns        29867
-BM_CPU_BSM/4096         189501 ns       188354 ns         3733
-BM_CPU_BSM/32768       1587179 ns      1604353 ns          448
-BM_CPU_BSM/262144     12207609 ns     12276786 ns           56
-BM_CPU_BSM/2097152    98711000 ns     98214286 ns            7
-BM_CPU_BSM/10000000  471168100 ns    468750000 ns            2
+---------------------------------------------------------------------------
+Benchmark                                 Time             CPU   Iterations
+---------------------------------------------------------------------------
+BM_CPU_BSM_Greeks/100                  3497 ns         3530 ns       203636
+BM_CPU_BSM_Greeks/512                 18352 ns        18415 ns        37333
+BM_CPU_BSM_Greeks/4096               142430 ns       144385 ns         4978
+BM_CPU_BSM_Greeks/32768             1144810 ns      1147461 ns          640
+BM_CPU_BSM_Greeks/262144            9452079 ns      9583333 ns           75
+BM_CPU_BSM_Greeks/2097152          75509156 ns     74652778 ns            9
+BM_CPU_BSM_Greeks/10000000        383898100 ns    382812500 ns            2
+BM_CPU_BinomialTreeGreeks/100      23317432 ns     22879464 ns           28
+BM_CPU_BinomialTreeGreeks/512     122478083 ns    122395833 ns            6
+BM_CPU_BinomialTreeGreeks/4096    962689900 ns    953125000 ns            1
+BM_CPU_BinomialTreeGreeks/32768  7695476000 ns   7656250000 ns            1
+BM_CPU_BinomialTreeGreeks/100000 2.3672e+10 ns   2.3594e+10 ns            1
 ```
 
 ### GPU Benchmark
+
 ```bash
 Running GPU Benchmark...
 Running ..\build\benchmarks\Release\gpu_benchmark.exe
@@ -147,52 +138,55 @@ CPU Caches:
   L1 Instruction 32 KiB (x8)
   L2 Unified 256 KiB (x8)
   L3 Unified 16384 KiB (x1)
-------------------------------------------------------------------------------------------
-Benchmark                                Time             CPU   Iterations UserCounters...
-------------------------------------------------------------------------------------------
-BM_GPU_BSM/100/manual_time           32077 ns        67180 ns        21165 Memcpy_GPU_ms=0.010752
-BM_GPU_BSM/512/manual_time           33755 ns        68715 ns        21147 Memcpy_GPU_ms=0.012288
-BM_GPU_BSM/4096/manual_time          33997 ns       109523 ns        21685 Memcpy_GPU_ms=0.070624
-BM_GPU_BSM/32768/manual_time         83493 ns       407528 ns         8435 Memcpy_GPU_ms=0.314336
-BM_GPU_BSM/262144/manual_time       492734 ns      2809804 ns         1507 Memcpy_GPU_ms=2.69843
-BM_GPU_BSM/2097152/manual_time     3496713 ns     20287958 ns          191 Memcpy_GPU_ms=16.6208
-BM_GPU_BSM/10000000/manual_time   16772894 ns    102734375 ns           40 Memcpy_GPU_ms=75.8564
+--------------------------------------------------------------------------------------------------------
+Benchmark                                              Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------------------
+BM_GPU_BSM_Greeks/100/manual_time                  33645 ns        97011 ns        20133 Memcpy_GPU_ms=0.028032
+BM_GPU_BSM_Greeks/512/manual_time                  39569 ns       103688 ns        17179 Memcpy_GPU_ms=0.03408
+BM_GPU_BSM_Greeks/4096/manual_time                 33495 ns       128029 ns        19893 Memcpy_GPU_ms=0.09648
+BM_GPU_BSM_Greeks/32768/manual_time                88988 ns       438603 ns         7873 Memcpy_GPU_ms=0.335744
+BM_GPU_BSM_Greeks/262144/manual_time              477384 ns      2761727 ns         1471 Memcpy_GPU_ms=2.25203
+BM_GPU_BSM_Greeks/2097152/manual_time            3530006 ns     21024215 ns          191 Memcpy_GPU_ms=17.633
+BM_GPU_BSM_Greeks/10000000/manual_time          16554763 ns     98958333 ns           42 Memcpy_GPU_ms=82.5018
+BM_GPU_BinomialTree_Greeks/100/manual_time      46676670 ns     45833333 ns           15 Memcpy_GPU_ms=0.107808
+BM_GPU_BinomialTree_Greeks/512/manual_time      71892400 ns     71875000 ns           10 Memcpy_GPU_ms=0.03104
+BM_GPU_BinomialTree_Greeks/4096/manual_time     76812699 ns     76388889 ns            9 Memcpy_GPU_ms=0.1392
+BM_GPU_BinomialTree_Greeks/32768/manual_time   505342712 ns    500000000 ns            1 Memcpy_GPU_ms=0.47568
+BM_GPU_BinomialTree_Greeks/100000/manual_time 1276642578 ns   1281250000 ns            1 Memcpy_GPU_ms=1.32189
 ```
 
 ### Benchmark Plots
+![Performance Comparison BSM](diagrams/BSM/performance_pointplot.png)
+![Performance Comparison BinomialTree](diagrams/BinomialTree/performance_pointplot.png)
+For a more in-depth benchmark review, visit the ![benchmarking document](benchmarks/benchmark.md).
 
-![CDF Execution Times](diagrams/cdf_plot.png)
-![CPU Performance](diagrams/cpu_performance.png)
-![GPU Execution Time](diagrams/gpu_breakdown_plot.png)
-![GPU "memcpy" Times](diagrams/gpu_memcpy.png)
-![Performance Trends](diagrams/performance_pointplot.png)
-![Speedup Ratio](diagrams/speedup_ratio.png)
-Note : The red line is the 1:1 ratio; anything above it is purely measuring GPU speedup
+## Notes
 
-### Personal Benchmarking
-
-Run against your own hardware to get meaningful numbers:
-
-```bash
-# CPU
-./cpu_benchmark
-
-# GPU (CUDA build only)
-./gpu_benchmark
-```
-
-The GPU benchmark uses a warmup pass before timing begins to exclude CUDA driver initialization from measurements.
+- `BSMModel` is the most mature path and is used by the main pricing examples and tests.
+- `BinomialTreeModel` supports pricing and finite-difference Greeks, but it is more computationally expensive.
+- While `BSMModel` is bottlenecked by memory transfers, `BinomialTreeModel` is bottlenecked by expensive calculations (backed by a NVIDIA Nsight Systems & Compute profile of the code as well as the benchmarking results).
 
 ## Known Limitations
 
-- **European options only** — no early exercise; American options require a binomial tree or finite difference solver
 - **Constant volatility** — BSM assumes σ is fixed; where stochastic volatility models (like Heston) would be more realistic
 - **No calibration** — implied volatility solving and surface fitting are not implemented
 
 ## Planned Extensions
-
-- American Options pricing (via Binomial Tree)
 - Monte Carlo pricing (for exotic options)
+- Implied volatility solver (starting with the solver and then potentially moving to a surface)
+- Hardening math for edge cases such as div by zero, div by infinity, ect.
+- Swapping kernel math functions for intrisic CUDA functions (Note that accuracy could fall in this swap and that why it hasn't happened yet)
+
+## Design Notes
+
+**Why header-only?**
+CUDA requires that any function called from a `__device__` context is visible to `nvcc` at compile time. Moving `BSMModel` entirely into a header lets the same class compile for both CPU (`g++`) and GPU (`nvcc`) without code duplication.
+
+**Why `HOST_DEVICE` on every method?**
+The `__host__ __device__` qualifiers tell `nvcc` to emit both a CPU and a GPU version of each function. The `#ifdef __CUDACC__` guard makes the macro a no-op under a standard C++ compiler, so the headers remain clean for CPU-only builds.
+
+**Why `cudaEvent_t` for benchmarking?**
+Host-side timers (`std::chrono`) include synchronization overhead that inflates GPU measurements. `cudaEvent_t` records timestamps on the GPU's command stream, giving accurate kernel-only timing. The GPU benchmark also separates `cudaMemcpy` time from compute time so both costs are visible independently.
 
 ## References
 
