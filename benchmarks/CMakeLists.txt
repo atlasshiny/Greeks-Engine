@@ -2,6 +2,7 @@
 if(CUDAToolkit_FOUND)
     add_executable(gpu_benchmark
         ../src/gpu/BSMKernel.cu # consider finding a better linking solution in the future
+        ../src/gpu/BinomialTreeKernel.cu # consider finding a better linking solution in the future
         GPUBenchmark.cu
     )
 
