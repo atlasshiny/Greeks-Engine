@@ -59,7 +59,7 @@ Greeks-Engine/
 
 ## Build
 
-***Requirements:** C++20 compiler, CMake 3.20+. CUDA Toolkit is optional — the build falls back to CPU-only if not found.
+**Requirements:** C++20 compiler, CMake 3.20+. CUDA Toolkit is optional — the build falls back to CPU-only if not found.
 
 ```bash
 git clone https://github.com/atlasshiny/Greeks-Engine.git
