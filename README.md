@@ -103,7 +103,7 @@ The following results and plots were generated using an Intel i7-10700KF and RTX
 ### High-Level Benchmark Plots
 ![Performance Comparison BSM](diagrams/BSM/performance_pointplot.png)
 ![Performance Comparison BinomialTree](diagrams/BinomialTree/performance_pointplot.png)
-For a more in-depth benchmark review, visit the ![benchmarking document](benchmarks/benchmark.md).
+For a more in-depth benchmark review, visit the [benchmarking document](benchmarks/benchmark.md).
 
 ## Notes
 
