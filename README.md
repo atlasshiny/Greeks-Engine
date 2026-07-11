@@ -59,7 +59,7 @@ Greeks-Engine/
 
 ## Build
 
-***Requirements:**** C++20 compiler, CMake 3.20+. CUDA Toolkit is optional — the build falls back to CPU-only if not found.
+***Requirements:** C++20 compiler, CMake 3.20+. CUDA Toolkit is optional — the build falls back to CPU-only if not found.
 
 ```bash
 git clone https://github.com/atlasshiny/Greeks-Engine.git
@@ -96,74 +96,22 @@ Runs the batch BSM and binomial tree examples from [src/main.cu](src/main.cu) wh
 Use CTest or the generated test executable from the build tree.
 
 ## Benchmarks
-The benchmark sources live in [benchmarks/CPUBenchmark.cpp](benchmarks/CPUBenchmark.cpp) and [benchmarks/GPUBenchmark.cu](benchmarks/GPUBenchmark.cu). The plotting helper is [benchmarks/plot.py](benchmarks/plot.py).
+The benchmark sources live in [benchmarks/CPUBenchmark.cpp](benchmarks/CPUBenchmark.cpp) and [benchmarks/GPUBenchmark.cu](benchmarks/GPUBenchmark.cu). The plotting helper is [benchmarks/plot.py](benchmarks/plot.py). 
 
-The following results and plots were generated using an Intel i7-10700KF and RTX 5060 (8GB) on Windows 11
+The following results and plots were generated using an Intel i7-10700KF and RTX 5060 (8GB) on Windows 11.
 
-### CPU Benchmark
-```bash
-Running CPU Benchmark...
-Running ..\build\benchmarks\Release\cpu_benchmark.exe
-Run on (16 X 3792 MHz CPU s)
-CPU Caches:
-  L1 Data 32 KiB (x8)
-  L1 Instruction 32 KiB (x8)
-  L2 Unified 256 KiB (x8)
-  L3 Unified 16384 KiB (x1)
----------------------------------------------------------------------------
-Benchmark                                 Time             CPU   Iterations
----------------------------------------------------------------------------
-BM_CPU_BSM_Greeks/100                  3497 ns         3530 ns       203636
-BM_CPU_BSM_Greeks/512                 18352 ns        18415 ns        37333
-BM_CPU_BSM_Greeks/4096               142430 ns       144385 ns         4978
-BM_CPU_BSM_Greeks/32768             1144810 ns      1147461 ns          640
-BM_CPU_BSM_Greeks/262144            9452079 ns      9583333 ns           75
-BM_CPU_BSM_Greeks/2097152          75509156 ns     74652778 ns            9
-BM_CPU_BSM_Greeks/10000000        383898100 ns    382812500 ns            2
-BM_CPU_BinomialTreeGreeks/100      23317432 ns     22879464 ns           28
-BM_CPU_BinomialTreeGreeks/512     122478083 ns    122395833 ns            6
-BM_CPU_BinomialTreeGreeks/4096    962689900 ns    953125000 ns            1
-BM_CPU_BinomialTreeGreeks/32768  7695476000 ns   7656250000 ns            1
-BM_CPU_BinomialTreeGreeks/100000 2.3672e+10 ns   2.3594e+10 ns            1
-```
-
-### GPU Benchmark
-
-```bash
-Running GPU Benchmark...
-Running ..\build\benchmarks\Release\gpu_benchmark.exe
-Run on (16 X 3792 MHz CPU s)
-CPU Caches:
-  L1 Data 32 KiB (x8)
-  L1 Instruction 32 KiB (x8)
-  L2 Unified 256 KiB (x8)
-  L3 Unified 16384 KiB (x1)
---------------------------------------------------------------------------------------------------------
-Benchmark                                              Time             CPU   Iterations UserCounters...
---------------------------------------------------------------------------------------------------------
-BM_GPU_BSM_Greeks/100/manual_time                  33645 ns        97011 ns        20133 Memcpy_GPU_ms=0.028032
-BM_GPU_BSM_Greeks/512/manual_time                  39569 ns       103688 ns        17179 Memcpy_GPU_ms=0.03408
-BM_GPU_BSM_Greeks/4096/manual_time                 33495 ns       128029 ns        19893 Memcpy_GPU_ms=0.09648
-BM_GPU_BSM_Greeks/32768/manual_time                88988 ns       438603 ns         7873 Memcpy_GPU_ms=0.335744
-BM_GPU_BSM_Greeks/262144/manual_time              477384 ns      2761727 ns         1471 Memcpy_GPU_ms=2.25203
-BM_GPU_BSM_Greeks/2097152/manual_time            3530006 ns     21024215 ns          191 Memcpy_GPU_ms=17.633
-BM_GPU_BSM_Greeks/10000000/manual_time          16554763 ns     98958333 ns           42 Memcpy_GPU_ms=82.5018
-BM_GPU_BinomialTree_Greeks/100/manual_time      46676670 ns     45833333 ns           15 Memcpy_GPU_ms=0.107808
-BM_GPU_BinomialTree_Greeks/512/manual_time      71892400 ns     71875000 ns           10 Memcpy_GPU_ms=0.03104
-BM_GPU_BinomialTree_Greeks/4096/manual_time     76812699 ns     76388889 ns            9 Memcpy_GPU_ms=0.1392
-BM_GPU_BinomialTree_Greeks/32768/manual_time   505342712 ns    500000000 ns            1 Memcpy_GPU_ms=0.47568
-BM_GPU_BinomialTree_Greeks/100000/manual_time 1276642578 ns   1281250000 ns            1 Memcpy_GPU_ms=1.32189
-```
-
-### Benchmark Plots
+### High-Level Benchmark Plots
 ![Performance Comparison BSM](diagrams/BSM/performance_pointplot.png)
 ![Performance Comparison BinomialTree](diagrams/BinomialTree/performance_pointplot.png)
+For a more in-depth benchmark review, visit the ![benchmarking document](benchmarks/benchmark.md).
 
 ## Notes
 
 - `BSMModel` is the most mature path and is used by the main pricing examples and tests.
 - `BinomialTreeModel` supports pricing and finite-difference Greeks, but it is more computationally expensive.
 - While `BSMModel` is bottlenecked by memory transfers, `BinomialTreeModel` is bottlenecked by expensive calculations (backed by a NVIDIA Nsight Systems & Compute profile of the code as well as the benchmarking results).
+- `BinomialTreeModel` takes in a buffer as a place to house all of the data needed when calculating the tree. It is passed in manually for CUDA compatability (since for cuda, it is convenient and more performance-efficient to pass in small buffer versus just initializing the buffer internally)
+- The `secondCentralDifference` method in `BinomialTreeModel` uses a square-rooted value instead of the raw value to help keep the math stable.
 
 ## Known Limitations
 
@@ -183,9 +131,6 @@ CUDA requires that any function called from a `__device__` context is visible to
 
 **Why `HOST_DEVICE` on every method?**
 The `__host__ __device__` qualifiers tell `nvcc` to emit both a CPU and a GPU version of each function. The `#ifdef __CUDACC__` guard makes the macro a no-op under a standard C++ compiler, so the headers remain clean for CPU-only builds.
-
-**Why `cudaEvent_t` for benchmarking?**
-Host-side timers (`std::chrono`) include synchronization overhead that inflates GPU measurements. `cudaEvent_t` records timestamps on the GPU's command stream, giving accurate kernel-only timing. The GPU benchmark also separates `cudaMemcpy` time from compute time so both costs are visible independently.
 
 ## References
 
