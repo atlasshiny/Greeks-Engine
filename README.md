@@ -98,8 +98,6 @@ Use CTest or the generated test executable from the build tree.
 ## Benchmarks
 The benchmark sources live in [benchmarks/CPUBenchmark.cpp](benchmarks/CPUBenchmark.cpp) and [benchmarks/GPUBenchmark.cu](benchmarks/GPUBenchmark.cu). The plotting helper is [benchmarks/plot.py](benchmarks/plot.py). 
 
-The following results and plots were generated using an Intel i7-10700KF and RTX 5060 (8GB) on Windows 11.
-
 ### High-Level Benchmark Plots
 ![Performance Comparison BSM](diagrams/BSM/performance_pointplot.png)
 ![Performance Comparison BinomialTree](diagrams/BinomialTree/performance_pointplot.png)
