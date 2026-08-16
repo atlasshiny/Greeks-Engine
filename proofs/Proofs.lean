@@ -1,1 +1,3 @@
-import Proofs.Basic
+import Proofs.PutCallParity
+import Proofs.BSMDeltaParity
+import Proofs.CallPutGammaParity
