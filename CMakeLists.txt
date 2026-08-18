@@ -31,9 +31,16 @@ FetchContent_Declare(
     GIT_TAG v1.9.5
 )
 
+FetchContent_Declare(
+    pybind11
+    GIT_REPOSITORY https://github.com/pybind/pybind11
+    GIT_TAG v3.1.0
+)
+
 FetchContent_MakeAvailable(
     googletest 
     googlebenchmark
+    pybind11
 )
 
 # Disable Google Benchmark testing for faster build times
