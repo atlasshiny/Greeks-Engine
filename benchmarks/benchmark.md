@@ -129,21 +129,21 @@ This is corroborated by an NVIDIA Nsight Systems & Compute profile of both kerne
 
 ### BSM
 
-![BSM Performance Trend](diagrams/BSM/performance_pointplot.png)
-![BSM CPU Performance](diagrams/BSM/cpu_performance.png)
-![BSM Speedup Ratio](diagrams/BSM/speedup_ratio.png)
-![BSM GPU Compute vs Memcpy Breakdown](diagrams/BSM/gpu_breakdown_plot.png)
-![BSM GPU Memcpy Time](diagrams/BSM/gpu_memcpy.png)
-![BSM CDF of Execution Times](diagrams/BSM/cdf_plot.png)
+![BSM Performance Trend](../diagrams/BSM/performance_pointplot.png)
+![BSM CPU Performance](../diagrams/BSM/cpu_performance.png)
+![BSM Speedup Ratio](../diagrams/BSM/speedup_ratio.png)
+![BSM GPU Compute vs Memcpy Breakdown](../diagrams/BSM/gpu_breakdown_plot.png)
+![BSM GPU Memcpy Time](../diagrams/BSM/gpu_memcpy.png)
+![BSM CDF of Execution Times](../diagrams/BSM/cdf_plot.png)
 
 ### Binomial Tree
 
-![Binomial Tree Performance Trend](diagrams/BinomialTree/performance_pointplot.png)
-![Binomial Tree CPU Performance](diagrams/BinomialTree/cpu_performance.png)
-![Binomial Tree Speedup Ratio](diagrams/BinomialTree/speedup_ratio.png)
-![Binomial Tree GPU Compute vs Memcpy Breakdown](diagrams/BinomialTree/gpu_breakdown_plot.png)
-![Binomial Tree GPU Memcpy Time](diagrams/BinomialTree/gpu_memcpy.png)
-![Binomial Tree CDF of Execution Times](diagrams/BinomialTree/cdf_plot.png)
+![Binomial Tree Performance Trend](../diagrams/BinomialTree/performance_pointplot.png)
+![Binomial Tree CPU Performance](../diagrams/BinomialTree/cpu_performance.png)
+![Binomial Tree Speedup Ratio](../diagrams/BinomialTree/speedup_ratio.png)
+![Binomial Tree GPU Compute vs Memcpy Breakdown](../diagrams/BinomialTree/gpu_breakdown_plot.png)
+![Binomial Tree GPU Memcpy Time](../diagrams/BinomialTree/gpu_memcpy.png)
+![Binomial Tree CDF of Execution Times](../diagrams/BinomialTree/cdf_plot.png)
 
 *Note: the red line in the speedup ratio plots marks the 1:1 CPU/GPU ratio — anything above it is a real GPU speedup, anything below means the CPU was faster.*
 
