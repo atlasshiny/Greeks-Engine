@@ -101,7 +101,6 @@ void MonteCarloImplementation() {
     double T = 1.0;          // Time to maturity in years
     double r = 0.05;         // Risk-free interest rate
     double sigma = 0.2;      // Volatility of the underlying asset
-    double q = 0.0;          // Dividend yield
     int numSimulations = 100000; // Number of Monte Carlo simulations
 
     // Statistical parameters to pass into the Monte Carlo model for sampling
@@ -109,7 +108,7 @@ void MonteCarloImplementation() {
     std::normal_distribution<double> dist(0.0, 1.0); // Standard normal distribution
 
     // Create an instance of the MonteCarloModel
-    MonteCarloModel monteCarlo(S, K, T, r, sigma, q, numSimulations);
+    MonteCarloModel monteCarlo(S, K, T, r, sigma, numSimulations);
 
     // Calculate and display the call and put option prices
     double callPrice = monteCarlo.price(0, rd, dist); // 0 for call option

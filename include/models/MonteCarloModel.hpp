@@ -4,8 +4,8 @@
 
 class MonteCarloModel {
 public:
-    HOST_DEVICE MonteCarloModel(double S, double K, double T, double r, double sigma, double q, int numSimulations)
-        : S(S), K(K), T(T), r(r), sigma(sigma), q(q), numSimulations(numSimulations) {}
+    HOST_DEVICE MonteCarloModel(double S, double K, double T, double r, double sigma, int numSimulations)
+        : S(S), K(K), T(T), r(r), sigma(sigma), numSimulations(numSimulations) {}
 
     #ifdef __CUDACC__
         // Device-side price call for CUDA threads
@@ -42,7 +42,6 @@ private:
     double T;      // Time to expiration
     double r;      // Risk-free interest rate
     double sigma;  // Volatility of the underlying asset
-    double q;      // Dividend yield
     int numSimulations; // Number of Monte Carlo simulations
     MathUtils::GBMProcess gbm{S, r, sigma}; // GBM process for simulating stock prices
 
