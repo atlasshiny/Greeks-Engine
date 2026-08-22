@@ -24,4 +24,9 @@ private:
     double q;      // Dividend yield
     int numSimulations; // Number of Monte Carlo simulations
 
+    HOST_DEVICE inline double simulatePath() const {
+        // Placeholder for simulating a single path of the underlying asset price
+        return 0.0;
+    }
+
 };
