@@ -9,10 +9,10 @@ public:
 
     #ifdef __CUDACC__
         // Device-side price call for CUDA threads
-        DEVICE inline double price(int optionType, curandState_t* state) const {
+        DEVICE inline double price(int optionType, curandState_t state) const {
             double totalPayoff = 0.0;
             for (long i = 0; i < numSimulations; ++i) {
-                double ST = gbm.sampleTerminal(T, state);
+                double ST = gbm.sampleTerminal(T, &state);
                 double payoff = (optionType == 0) ? fmax(ST - K, 0.0) : fmax(K - ST, 0.0);
                 totalPayoff += payoff;
             }
