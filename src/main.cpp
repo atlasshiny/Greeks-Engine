@@ -1,6 +1,9 @@
 #include <iostream>
+#include <random>
+#include <cmath>
 #include "models/BinomialTreeModel.hpp"
 #include "models/BSMModel.hpp"
+#include "models/MonteCarloModel.hpp"
 #include "Greeks.hpp"
 
 void BSMModelImplementation() {
@@ -84,7 +87,39 @@ void BinomialTreeImplementation() {
     std::cout << "Theta: " << putGreeks.theta << std::endl;
     std::cout << "Rho: " << putGreeks.rho << std::endl;
 
+    std::cout << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << std::endl;
+
     // When Greek calculations are implemented, call the calculateGreeks method similarly to the BSM model.
+}
+
+void MonteCarloImplementation() {
+    // Example parameters for the Monte Carlo model
+    double S = 100.0;        // Spot price
+    double K = 100.0;        // Strike price
+    double T = 1.0;          // Time to maturity in years
+    double r = 0.05;         // Risk-free interest rate
+    double sigma = 0.2;      // Volatility of the underlying asset
+    double q = 0.0;          // Dividend yield
+    int numSimulations = 100000; // Number of Monte Carlo simulations
+
+    // Statistical parameters to pass into the Monte Carlo model for sampling
+    std::random_device rd;  // Random number generator
+    std::normal_distribution<double> dist(0.0, 1.0); // Standard normal distribution
+
+    // Create an instance of the MonteCarloModel
+    MonteCarloModel monteCarlo(S, K, T, r, sigma, q, numSimulations);
+
+    // Calculate and display the call and put option prices
+    double callPrice = monteCarlo.price(0, rd, dist); // 0 for call option
+    double putPrice = monteCarlo.price(1, rd, dist);  // 1 for put option
+
+    std::cout << "Monte Carlo Model:" << std::endl;
+    std::cout << "Call Option Price: " << callPrice << std::endl;
+    std::cout << "Put Option Price: " << putPrice << std::endl;
+
+    // Note: Greeks calculation is not implemented for Monte Carlo due to computational expense.
 }
 
 // Runs every model that has been created with default parameters and prints the results to the console
@@ -92,6 +127,8 @@ int main() {
     BSMModelImplementation();
 
     BinomialTreeImplementation();
+
+    MonteCarloImplementation();
 
     return 0;
 }
