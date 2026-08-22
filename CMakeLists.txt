@@ -58,6 +58,7 @@ if(CUDAToolkit_FOUND)
     add_executable(GreeksEngineGPU
         src/gpu/BSMKernel.cu
         src/gpu/BinomialTreeKernel.cu
+        src/gpu/MonteCarloKernel.cu
         src/main.cu
     )
 
