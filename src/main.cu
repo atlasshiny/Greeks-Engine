@@ -4,10 +4,12 @@
 #include "gpu/BinomialTreeKernel.cuh"
 #include "models/BSMModel.hpp"
 #include "models/BinomialTreeModel.hpp"
+#include "models/MonteCarloModel.hpp"
 #include "Option.hpp"
 #include "Greeks.hpp"
 #include "MarketParameters.hpp"
 #include <cuda_runtime.h>
+#include "gpu/MonteCarloKernel.cuh"
 
 void BSMModelImplementation(int n_options){
     std::vector<Option> call_options(n_options, {100.0, 1.0, 0});
@@ -92,6 +94,31 @@ void BinomialTreeImplementation(int n_steps, int n_options){
     std::cout << "----------------------------------------" << std::endl;
     std::cout << std::endl;
 }
+
+void MonteCarloModelImplementation(int n_options, int n_simulations = 100000) {
+    std::vector<Option> call_options(n_options, {100.0, 1.0, 0});
+    std::vector<Option> put_options(n_options, {100.0, 1.0, 1});
+    std::vector<MarketParams> mktparams(n_options, {100.0, 0.05, 0.2, 0.0});
+    std::vector<double> call_price_results(n_options);
+    std::vector<double> put_price_results(n_options);
+
+    // Launch parallel Monte Carlo computation on GPU
+    launchMonteCarloPricingKernel(call_options.data(), mktparams.data(), call_price_results.data(), n_simulations, n_options);
+    launchMonteCarloPricingKernel(put_options.data(), mktparams.data(), put_price_results.data(), n_simulations, n_options);
+
+    std::cout << "MONTE CARLO MODEL (" << n_simulations << " simulations/option)" << std::endl;
+    std::cout << "Successfully processed " << n_options << " options on the GPU." << std::endl;
+
+    std::cout << "Call Option Price" << std::endl;
+    std::cout << "Price: " << call_price_results[0] << std::endl;
+
+    std::cout << std::endl;
+
+    std::cout << "Put Option Price" << std::endl;
+    std::cout << "Price: " << put_price_results[0] << std::endl;
+
+    std::cout << std::endl;
+};
 
 int main() {
     int n_options = 1000000;
