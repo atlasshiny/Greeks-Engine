@@ -11,7 +11,7 @@
 namespace MathUtils {
     class GBMProcess {
     public:
-        GBMProcess(double S0, double mu, double sigma) : S0(S0), mu(mu), sigma(sigma) {}
+        HOST_DEVICE GBMProcess(double S0, double mu, double sigma) : S0(S0), mu(mu), sigma(sigma) {}
 
         // Method to calculate the terminal stock price
         HOST_DEVICE double stepTerminal(double T, double Z) const {
