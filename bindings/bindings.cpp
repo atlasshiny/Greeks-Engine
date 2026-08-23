@@ -1,7 +1,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
-#include <vector>
+#include "Greeks.hpp"
+#include "MarketParameters.hpp"
+#include "Option.hpp"
 
 #include "models/BSMModel.hpp"
 #include "models/BinomialTreeModel.hpp"
