@@ -1,6 +1,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+#include <cmath>
+#include <random>
 #include "Greeks.hpp"
 #include "MarketParameters.hpp"
 #include "Option.hpp"
@@ -144,6 +146,9 @@ PYBIND11_MODULE(GreeksEngine, m) {
     py::module_ mc = m.def_submodule("monte_carlo", "Monte Carlo Pricing Module");
     py::class_<MonteCarloModel>(mc, "MonteCarloModel")
         .def(py::init<double, double, double, double, double, int>(),
-             py::arg("S"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"), py::arg("numSimulations"))
-        .def("price", &MonteCarloModel::price, py::arg("optionType"));
+            py::arg("S"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"), py::arg("numSimulations"))
+
+        .def("price", [](const MonteCarloModel& self, int optionType, std::mt19937& gen, std::normal_distribution<double>& dist) {
+            return self.price(optionType, gen, dist);
+        });
 }
