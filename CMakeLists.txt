@@ -10,6 +10,8 @@ find_package(CUDAToolkit QUIET)
 
 if(CUDAToolkit_FOUND)
     enable_language(CUDA)
+    set(CMAKE_CUDA_STANDARD 20)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_ARCHITECTURES native)
 
     message("CUDA found; Building GPU and CPU")
@@ -37,15 +39,31 @@ FetchContent_Declare(
     GIT_TAG v3.1.0
 )
 
+# Disable Google Benchmark testing for faster build times
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(
     googletest 
     googlebenchmark
     pybind11
 )
 
-# Disable Google Benchmark testing for faster build times
-set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+# CUDA Kernel Library Creation
+if(CUDAToolkit_FOUND)
+    add_library(gpu_kernels STATIC
+        src/gpu/BSMKernel.cu
+        src/gpu/BinomialTreeKernel.cu
+        src/gpu/MonteCarloKernel.cu
+    )
+
+    target_include_directories(gpu_kernels PRIVATE include)
+
+    set_target_properties(gpu_kernels PROPERTIES 
+        POSITION_INDEPENDENT_CODE ON
+        CUDA_SEPARABLE_COMPILATION ON
+    )
+endif()
 
 # CPU Executable
 add_executable(GreeksEngineCPU 
@@ -56,17 +74,25 @@ target_include_directories(GreeksEngineCPU PRIVATE include)
 # GPU Executable
 if(CUDAToolkit_FOUND)
     add_executable(GreeksEngineGPU
-        src/gpu/BSMKernel.cu
-        src/gpu/BinomialTreeKernel.cu
-        src/gpu/MonteCarloKernel.cu
         src/main.cu
     )
 
+    set_target_properties(GreeksEngineGPU PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON
+        CUDA_RESOLVE_DEVICE_LINK_PHASE ON
+    )
+
     target_include_directories(GreeksEngineGPU PRIVATE include)
+    target_link_libraries(GreeksEngineGPU PRIVATE gpu_kernels CUDA::cudart)
 endif()
 
-# Benchmarking CMakeList
-add_subdirectory(benchmarks)
+# Python Module Bindings
+pybind11_add_module(GreeksEngine bindings/bindings.cpp)
+target_include_directories(GreeksEngine PRIVATE include)
+
+if(CUDAToolkit_FOUND)
+    target_link_libraries(GreeksEngine PRIVATE gpu_kernels CUDA::cudart)
+endif()
 
 # Tests
 enable_testing()
@@ -85,3 +111,6 @@ target_link_libraries(GreeksEngineTests PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(GreeksEngineTests)
+
+# Benchmarking CMakeList
+add_subdirectory(benchmarks)
