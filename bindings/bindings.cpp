@@ -27,16 +27,19 @@ py::array_t<double> batch_price_binomial_cpu(py::array_t<Option> options, py::ar
     auto* ptr_results = static_cast<double*>(results.request().ptr);
 
     // Single buffer reused across loop iterations
-    std::vector<double> buffer(n_steps + 1);
+    double* buffer = nullptr;
+    buffer = new double[n_steps + 1];
 
     for (int i = 0; i < n_options; ++i) {
         BinomialTreeModel model(
             ptr_mktparams[i].S, ptr_options[i].K, ptr_options[i].T, 
             ptr_mktparams[i].r, ptr_mktparams[i].sigma, ptr_mktparams[i].q, 
-            n_steps, buffer.data(), ptr_options[i].isAmerican
+            n_steps, ptr_options[i].isAmerican
         );
-        ptr_results[i] = model.price(ptr_options[i].type);
+        ptr_results[i] = model.price(ptr_options[i].type, buffer);
     }
+
+    delete[] buffer;
 
     return results;
 }
