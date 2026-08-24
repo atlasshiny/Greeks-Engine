@@ -5,16 +5,17 @@
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-A GPU-accelerated option pricing library in C++20. Implements the Black-Scholes-Merton model for European options and the Binomial Tree model for American options, computing prices and all five major Greeks (Δ, Γ, ν, θ, ρ) on both CPU and CUDA GPU from a single  header-only codebase.
+A GPU-accelerated option pricing library in C++20. Implements the Black-Scholes-Merton model and Monte Carlo simulation for European options and the Binomial Tree model for American options computing prices and all five major Greeks (Δ, Γ, ν, θ, ρ) on both CPU and CUDA GPU from a single  header-only codebase.
 
 ## Features
 
-- Prices European calls and puts with the Black-Scholes-Merton model.
+- Prices European calls and puts with the Black-Scholes-Merton model & Monte Carlo simulation.
 - Prices European and American options with the binomial tree model.
 - Computes the major Greeks exposed by each model.
 - Provides CPU and GPU executable entry points from the same codebase.
 - Includes GoogleTest unit tests and Google Benchmark benchmarks.
-- CMake auto-detects CUDA; builds CPU-only if no GPU is found
+- CMake auto-detects CUDA; builds CPU-only if no GPU is found.
+- All models and their CPP/CUDA variants are accessible in Python via Pybind11.
 
 ## Project Structure
 
@@ -26,6 +27,7 @@ Greeks-Engine/
 │   ├── Option.hpp
 │   ├── macros.hpp
 │   ├── math/
+|   |   ├── gbm.hpp
 │   │   ├── normcdf.hpp
 │   │   └── normpdf.hpp
 │   ├── models/
@@ -49,9 +51,12 @@ Greeks-Engine/
 │   ├── setup.hpp
 │   ├── cpu_results.csv
 │   └── gpu_results.csv
+├── bindings/
+│   └── bindings.cpp
 ├── tests/
 │   ├── bsm_tests.cpp
-│   └── binomial_tree_tests.cpp
+│   ├── binomial_tree_tests.cpp
+|   └── monte_carlo_tests.cpp
 └── diagrams/
     ├── BSM/
     └── BinomialTree/
@@ -69,7 +74,7 @@ cmake ..
 cmake --build . -j4
 ```
 
-This produces up to five executables depending on your environment:
+This produces up to five executables & a ```.pyd``` file depending on your environment:
 
 | Executable | Description |
 |---|---|
@@ -78,6 +83,7 @@ This produces up to five executables depending on your environment:
 | `GreeksEngineTests` | GoogleTest suite for the pricing models |
 | `cpu_benchmark` | Google Benchmark target for sequential CPU pricing |
 | `gpu_benchmark` | Google Benchmark target for CUDA kernel GPU pricing |
+| `GreeksEngine.[compiler_architecture].pyd` | ```.pyd``` file that can be treated as a module for high-level Python development |
 
 ## Running
 
