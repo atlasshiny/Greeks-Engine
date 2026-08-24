@@ -9,6 +9,13 @@
     #define DEVICE
 #endif
 
+// Macro for model policy structs
+#ifdef __CUDACC__
+    #define MODEL_POLICY __host__ __device__ __forceinline__
+#else
+    #define MODEL_POLICY inline
+#endif
+
 // Macro for switching from std math functions to CUDA math functions when compiling with NVCC
 #ifdef __CUDACC__
     #define MATH_FUNC(func) func##f
