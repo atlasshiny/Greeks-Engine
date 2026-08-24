@@ -125,3 +125,11 @@ private:
     }
 
 };
+
+struct BSMPolicy {
+    MODEL_POLICY float operator()(float S, float K, float T, float r, float sigma, int optionType) const {
+        BSMModel model(S, K, T, r, sigma);
+        
+        return model.price(optionType); 
+    }
+};

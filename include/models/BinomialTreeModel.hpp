@@ -141,3 +141,19 @@ private:
     }
 
 };
+
+template <int steps = 200>
+struct BinomialTreePolicy {
+    float q;
+    bool isAmerican;
+
+    HOST_DEVICE BinomialTreePolicy(float q = 0.0, bool isAmerican = true) 
+        : q(q), isAmerican(isAmerican) {}
+
+    MODEL_POLICY float operator()(float S, float K, float T, float r, float sigma, float q, int optionType) const {
+        double buffer[steps + 1];
+
+        BinomialTreeModel model(S, K, T, r, sigma, q, steps);
+        return model.price(optionType, buffer);
+    }
+};
