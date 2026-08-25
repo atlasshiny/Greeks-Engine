@@ -110,6 +110,85 @@ static void BM_GPU_BSM_Greeks(benchmark::State& state) {
 //This macro registers the benchmark, sets the range for the data, and forces the use of the cudaEvent time
 BENCHMARK(BM_GPU_BSM_Greeks)->Range(100, 10000000)->UseManualTime(); // Benchmark for 100 to 10,000,000 options
 
+static void BM_GPU_BSM_Price(benchmark::State& state) {
+    cudaEvent_t start_compute, stop_compute, start_copy, stop_copy;
+    cudaEventCreate(&start_compute);
+    cudaEventCreate(&stop_compute);
+    cudaEventCreate(&start_copy);
+    cudaEventCreate(&stop_copy);
+
+    int n = static_cast<int>(state.range());
+
+    // WARMUP BEFORE BENCHMARKING
+    constexpr int warmup_size = 1000;
+    BenchmarkBatch warmup_data = generateBenchmarkBatch(warmup_size);
+    launchBSMPricingKernel(warmup_data.options.data(), warmup_data.mktparams.data(), warmup_data.price_results.data(), warmup_size);
+
+    Option *h_options;
+    MarketParams *h_mktparams;
+    double *h_results;
+
+    cudaHostAlloc((void**)&h_options, n * sizeof(Option), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&h_mktparams, n * sizeof(MarketParams), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&h_results, n * sizeof(double), cudaHostAllocDefault);
+
+    Option *d_options;
+    MarketParams *d_mktparams;
+    double *d_results;
+
+    cudaMalloc(&d_options, n * sizeof(Option));
+    cudaMalloc(&d_mktparams, n * sizeof(MarketParams));
+    cudaMalloc(&d_results, n * sizeof(double));
+
+    BenchmarkBatch data = generateBenchmarkBatch(n);
+
+    memcpy(h_options, data.options.data(), n * sizeof(Option));
+    memcpy(h_mktparams, data.mktparams.data(), n * sizeof(MarketParams));
+
+    for (auto _ : state) {
+        cudaEventRecord(start_copy, 0);
+        cudaMemcpy(d_options, h_options, n * sizeof(Option), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_mktparams, h_mktparams, n * sizeof(MarketParams), cudaMemcpyHostToDevice);
+        cudaEventRecord(stop_copy, 0);
+        cudaEventSynchronize(stop_copy);
+
+        float copy_ms = 0;
+        cudaEventElapsedTime(&copy_ms, start_copy, stop_copy);
+
+        int threadsPerBlock = 256;
+        int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock;
+
+        cudaDeviceSynchronize();
+        cudaEventRecord(start_compute, 0);
+
+        computeBSMPricingKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n);
+
+        cudaDeviceSynchronize();
+        cudaEventRecord(stop_compute, 0);
+        cudaEventSynchronize(stop_compute);
+
+        float milliseconds = 0;
+        cudaEventElapsedTime(&milliseconds, start_compute, stop_compute);
+
+        state.SetIterationTime(milliseconds / 1000.0);
+        state.counters["Memcpy_GPU_ms"] = copy_ms;
+    }
+
+    cudaEventDestroy(start_compute);
+    cudaEventDestroy(stop_compute);
+    cudaEventDestroy(start_copy);
+    cudaEventDestroy(stop_copy);
+
+    cudaFreeHost(h_options);
+    cudaFreeHost(h_mktparams);
+    cudaFreeHost(h_results);
+
+    cudaFree(d_options);
+    cudaFree(d_mktparams);
+    cudaFree(d_results);
+}
+BENCHMARK(BM_GPU_BSM_Price)->Range(100, 10000000)->UseManualTime();
+
 // BINOMIAL TREE BENCHMARKS
 
 static void BM_GPU_BinomialTree_Greeks(benchmark::State& state) {
@@ -201,5 +280,76 @@ static void BM_GPU_BinomialTree_Greeks(benchmark::State& state) {
     cudaFree(d_results);
 }
 BENCHMARK(BM_GPU_BinomialTree_Greeks)->Range(100, 100000)->UseManualTime(); // Benchmark for 100 to 100,000 options
+
+static void BM_GPU_BinomialTree_Price(benchmark::State& state) {
+    cudaEvent_t start_compute, stop_compute, start_copy, stop_copy;
+    cudaEventCreate(&start_compute);
+    cudaEventCreate(&stop_compute);
+    cudaEventCreate(&start_copy);
+    cudaEventCreate(&stop_copy);
+
+    int n_options = static_cast<int>(state.range());
+    int n_steps = 200;
+
+    // WARMUP BEFORE BENCHMARKING
+    constexpr int warmup_size = 1000;
+    constexpr int warmup_step = 10;
+    BenchmarkBatch warmup_data = generateBenchmarkBatch(warmup_size);
+
+    launchBinomialPricingKernel(warmup_data.options.data(), warmup_data.mktparams.data(), warmup_data.price_results.data(), warmup_step, warmup_size);
+    cudaDeviceSynchronize();
+
+    Option *d_options;
+    MarketParams *d_mktparams;
+    double *d_buffer;
+    double *d_results;
+
+    cudaMalloc(&d_options, n_options * sizeof(Option));
+    cudaMalloc(&d_mktparams, n_options * sizeof(MarketParams));
+    cudaMalloc(&d_buffer, n_options * (n_steps + 1) * sizeof(double));
+    cudaMalloc(&d_results, n_options * sizeof(double));
+
+    BenchmarkBatch data = generateBenchmarkBatch(n_options);
+
+    for (auto _ : state) {
+        cudaEventRecord(start_copy, 0);
+        cudaMemcpy(d_options, data.options.data(), n_options * sizeof(Option), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_mktparams, data.mktparams.data(), n_options * sizeof(MarketParams), cudaMemcpyHostToDevice);
+        cudaEventRecord(stop_copy, 0);
+        cudaEventSynchronize(stop_copy);
+
+        float copy_ms = 0;
+        cudaEventElapsedTime(&copy_ms, start_copy, stop_copy);
+
+        int threadsPerBlock = 256;
+        int blocksPerGrid = (n_options + threadsPerBlock - 1) / threadsPerBlock;
+
+        cudaDeviceSynchronize();
+        cudaEventRecord(start_compute, 0);
+
+        computeBinomialPricingKernel<<<blocksPerGrid, threadsPerBlock>>>(d_options, d_mktparams, d_results, n_steps, n_options, d_buffer);
+
+        cudaDeviceSynchronize();
+        cudaEventRecord(stop_compute, 0);
+        cudaEventSynchronize(stop_compute);
+
+        float milliseconds = 0;
+        cudaEventElapsedTime(&milliseconds, start_compute, stop_compute);
+
+        state.SetIterationTime(milliseconds / 1000.0);
+        state.counters["Memcpy_GPU_ms"] = copy_ms;
+    }
+
+    cudaEventDestroy(start_compute);
+    cudaEventDestroy(stop_compute);
+    cudaEventDestroy(start_copy);
+    cudaEventDestroy(stop_copy);
+
+    cudaFree(d_options);
+    cudaFree(d_mktparams);
+    cudaFree(d_buffer);
+    cudaFree(d_results);
+}
+BENCHMARK(BM_GPU_BinomialTree_Price)->Range(100, 100000)->UseManualTime();
 
 BENCHMARK_MAIN();
