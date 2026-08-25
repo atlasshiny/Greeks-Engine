@@ -66,5 +66,8 @@ coverage/
 benchmarks/*_results.csv
 benchmarks/plots
 
+# Option Surface .bin output
+option_surface_*.bin
+
 # Nsight data
 benchmarks/Nsight
