@@ -142,7 +142,7 @@ static void BM_CPU_MonteCarloPrice(benchmark::State& state) {
     int n_simulations = 10000;
 
     // Set up standard Mersenne Twister RNG and distribution once
-    std::random_device rd;
+    std::mt19937 gen(42);
     std::normal_distribution<double> dist(0.0, 1.0);
 
     // Warm-up phase
@@ -155,7 +155,7 @@ static void BM_CPU_MonteCarloPrice(benchmark::State& state) {
             warmup_data.options[i].T, warmup_data.mktparams[i].r, 
             warmup_data.mktparams[i].sigma, n_simulations
         );
-        double p = model.price(warmup_data.options[i].type, rd, dist);
+        double p = model.price(warmup_data.options[i].type, gen, dist);
         benchmark::DoNotOptimize(p);
     }
 
@@ -170,7 +170,7 @@ static void BM_CPU_MonteCarloPrice(benchmark::State& state) {
                 data.mktparams[i].sigma, n_simulations
             );
 
-            double price = model.price(data.options[i].type, rd, dist);
+            double price = model.price(data.options[i].type, gen, dist);
             
             // Prevent compiler from optimizing away the loop computation
             benchmark::DoNotOptimize(price);
