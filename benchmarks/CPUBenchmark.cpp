@@ -149,8 +149,7 @@ static void BM_CPU_MonteCarloPrice(benchmark::State& state) {
         MonteCarloModel model(
             warmup_data.mktparams[i].S, warmup_data.options[i].K, 
             warmup_data.options[i].T, warmup_data.mktparams[i].r, 
-            warmup_data.mktparams[i].sigma, warmup_data.mktparams[i].q, 
-            n_simulations
+            warmup_data.mktparams[i].sigma, n_simulations
         );
         double p = model.price(warmup_data.options[i].type, rd, dist);
         benchmark::DoNotOptimize(p);
@@ -164,11 +163,10 @@ static void BM_CPU_MonteCarloPrice(benchmark::State& state) {
             MonteCarloModel model(
                 data.mktparams[i].S, data.options[i].K, 
                 data.options[i].T, data.mktparams[i].r, 
-                data.mktparams[i].sigma, data.mktparams[i].q, 
-                n_simulations
+                data.mktparams[i].sigma, n_simulations
             );
-
-            double price = model.price(data.options[i].type, gen, dist);
+            
+            double price = model.price(data.options[i].type, rd, dist);
             
             // Prevent compiler from optimizing away the loop computation
             benchmark::DoNotOptimize(price);
