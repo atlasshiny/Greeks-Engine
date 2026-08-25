@@ -130,17 +130,12 @@ private:
     // Helper method for saving the generated surface to a file (used in CPU & GPU generation)
 
     static void saveSurfaceToFile(const float* surface, int numS, int numVol, const std::string& filename) {
-        std::ofstream outFile(filename);
+        std::ofstream outFile(filename, std::ios::binary);
         if (outFile.is_open()) {
-            for (int v_idx = 0; v_idx < numVol; ++v_idx) {
-                for (int s_idx = 0; s_idx < numS; ++s_idx) {
-                    outFile << surface[v_idx * numS + s_idx] << " ";
-                }
-                outFile << std::endl;
-            }
+            outFile.write(reinterpret_cast<const char*>(surface), numS * numVol * sizeof(float));
             outFile.close();
         } else {
             std::cerr << "Unable to open file for writing option surface." << std::endl;
         }
-    }
+    };
 };
