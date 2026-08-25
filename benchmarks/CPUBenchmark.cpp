@@ -28,7 +28,8 @@ static void BM_CPU_BSM_Greeks(benchmark::State& state) {
         for (size_t i = 0; i < data.options.size(); ++i) {
             BSMModel model(data.mktparams[i].S, data.options[i].K, data.options[i].T, data.mktparams[i].r, data.mktparams[i].sigma);
 
-            model.calculateGreeks(data.options[i].type); // Calculate the Greeks (not stored, just for benchmarking)
+            Greeks greeks = model.calculateGreeks(data.options[i].type); // Calculate the Greeks (not stored, just for benchmarking)
+            benchmark::DoNotOptimize(greeks); // Prevent compiler from optimizing away the loop computation
         }
     }
 }
@@ -55,7 +56,8 @@ static void BM_CPU_BSM_Price(benchmark::State& state) {
         for (size_t i = 0; i < data.options.size(); ++i) {
             BSMModel model(data.mktparams[i].S, data.options[i].K, data.options[i].T, data.mktparams[i].r, data.mktparams[i].sigma);
 
-            model.price(data.options[i].type); // Calculate the price (not stored, just for benchmarking)
+            double price = model.price(data.options[i].type); // Calculate the price (not stored, just for benchmarking)
+            benchmark::DoNotOptimize(price); // Prevent compiler from optimizing away the loop computation
         }
     }
 }
@@ -90,7 +92,8 @@ static void BM_CPU_BinomialTreeGreeks(benchmark::State& state) {
         for (size_t i = 0; i < data.options.size(); ++i) {
             BinomialTreeModel model(data.mktparams[i].S, data.options[i].K, data.options[i].T, data.mktparams[i].r, data.mktparams[i].sigma, data.mktparams[i].q, n_steps, data.options[i].isAmerican);
 
-            model.calculateGreeks(data.options[i].type, buffer.data(), 0.01); // Calculate the Greeks (not stored, just for benchmarking)
+            Greeks result = model.calculateGreeks(data.options[i].type, buffer.data(), 0.01); // Calculate the Greeks (not stored, just for benchmarking)
+            benchmark::DoNotOptimize(result); // Prevent compiler from optimizing away the loop computation
         }
     }
 }
@@ -123,7 +126,8 @@ static void BM_CPU_BinomialTreePrice(benchmark::State& state) {
         for (size_t i = 0; i < data.options.size(); ++i) {
             BinomialTreeModel model(data.mktparams[i].S, data.options[i].K, data.options[i].T, data.mktparams[i].r, data.mktparams[i].sigma, data.mktparams[i].q, n_steps, data.options[i].isAmerican);
 
-            model.price(data.options[i].type, buffer.data()); // Calculate the price (not stored, just for benchmarking)
+            double price = model.price(data.options[i].type, buffer.data()); // Calculate the price (not stored, just for benchmarking)
+            benchmark::DoNotOptimize(price); // Prevent compiler from optimizing away the loop computation
         }
     }
 }
@@ -165,7 +169,7 @@ static void BM_CPU_MonteCarloPrice(benchmark::State& state) {
                 data.options[i].T, data.mktparams[i].r, 
                 data.mktparams[i].sigma, n_simulations
             );
-            
+
             double price = model.price(data.options[i].type, rd, dist);
             
             // Prevent compiler from optimizing away the loop computation
