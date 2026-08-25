@@ -36,13 +36,13 @@ public:
     // CPU Generator
     template <typename PricingPolicy>
     static std::vector<float> generateCPU(
-        float* surface,
         int numS, int numVol,
         float S_min, float S_step,
         float vol_min, float vol_step,
         float T, float r, float K, int optionType,
         PricingPolicy policy) 
     {
+        std::vector<float> surface(numS * numVol);
         for (int v_idx = 0; v_idx < numVol; ++v_idx) {
             for (int s_idx = 0; s_idx < numS; ++s_idx) {
                 float S = S_min + s_idx * S_step;
@@ -56,7 +56,7 @@ public:
         // Save the generated surface to a file for verification
         saveSurfaceToFile(surface, numS, numVol, "/Greeks-Engine/option_surface_cpu.bin");
         
-        return std::vector<float>(surface, surface + numS * numVol);
+        return surface;
     }
 
 #ifdef __CUDACC__
@@ -95,7 +95,7 @@ public:
         // Cleanup VRAM
         cudaFree(d_surface);
 
-        saveSurfaceToFile(h_surface.data(), numS, numVol, "/Greeks-Engine/option_surface_gpu.bin");
+        saveSurfaceToFile(h_surface, numS, numVol, "/Greeks-Engine/option_surface_gpu.bin");
 
         return h_surface;
     }
@@ -129,10 +129,10 @@ private:
 
     // Helper method for saving the generated surface to a file (used in CPU & GPU generation)
 
-    static void saveSurfaceToFile(const float* surface, int numS, int numVol, const std::string& filename) {
+    static void saveSurfaceToFile(const std::vector<float>& surface, int numS, int numVol, const std::string& filename) {
         std::ofstream outFile(filename, std::ios::binary);
         if (outFile.is_open()) {
-            outFile.write(reinterpret_cast<const char*>(surface), numS * numVol * sizeof(float));
+            outFile.write(reinterpret_cast<const char*>(surface.data()), numS * numVol * sizeof(float));
             outFile.close();
         } else {
             std::cerr << "Unable to open file for writing option surface." << std::endl;
