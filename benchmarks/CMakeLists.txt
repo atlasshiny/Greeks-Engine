@@ -1,13 +1,21 @@
 # Benchmark Executable
 if(CUDAToolkit_FOUND)
     add_executable(gpu_benchmark
-        ../src/gpu/BSMKernel.cu # consider finding a better linking solution in the future
-        ../src/gpu/BinomialTreeKernel.cu # consider finding a better linking solution in the future
         GPUBenchmark.cu
     )
 
     target_include_directories(gpu_benchmark PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include ${CMAKE_CURRENT_SOURCE_DIR})
-    target_link_libraries(gpu_benchmark PRIVATE benchmark::benchmark_main)
+    target_link_libraries(gpu_benchmark PRIVATE
+        gpu_kernels 
+        benchmark::benchmark_main
+        CUDA::cudart
+        CUDA::curand
+    )
+
+    set_target_properties(gpu_benchmark PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    )
 endif()
 
 add_executable(cpu_benchmark
