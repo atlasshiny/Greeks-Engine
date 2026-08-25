@@ -10,6 +10,7 @@
 #include "MarketParameters.hpp"
 #include <cuda_runtime.h>
 #include "gpu/MonteCarloKernel.cuh"
+#include "surfaces/OptionsSurface.hpp"
 
 void BSMModelImplementation(int n_options){
     std::vector<Option> call_options(n_options, {100.0, 1.0, 0});
@@ -95,7 +96,7 @@ void BinomialTreeImplementation(int n_steps, int n_options){
     std::cout << std::endl;
 }
 
-void MonteCarloModelImplementation(int n_options, int n_simulations = 100000) {
+void MonteCarloModelImplementation(int n_options = 1, int n_simulations = 100000) {
     std::vector<Option> call_options(n_options, {100.0, 1.0, 0});
     std::vector<Option> put_options(n_options, {100.0, 1.0, 1});
     std::vector<MarketParams> mktparams(n_options, {100.0, 0.05, 0.2, 0.0});
@@ -120,6 +121,31 @@ void MonteCarloModelImplementation(int n_options, int n_simulations = 100000) {
     std::cout << std::endl;
 };
 
+void OptionSurfaceImplementation() {
+    // Grid Parameters
+    int numS = 100;          
+    int numVol = 100;       
+    float S_min = 50.0f;    
+    float S_step = 1.0f;    
+    float vol_min = 0.1f;   
+    float vol_step = 0.01f; 
+    float T = 1.0f;         
+    float r = 0.05f;        
+    float K = 100.0f;       
+    int optionType = 0;     
+
+    // Ommited the GPU version that keeps results on VRAM for future operations, as it is not used in this implementation.
+
+    // Create a vector to hold the option surface results
+    std::vector<float> h_surface(numS * numVol);
+
+    h_surface = OptionSurfaceEngine::generateGPU(
+        numS, numVol, S_min, S_step, vol_min, vol_step,
+        T, r, K, optionType, BSMPolicy()
+    );
+
+    std::cout << "Option Surface generated using BSM model on GPU." << std::endl;
+}
 int main() {
     int n_options = 1000000;
     int n_steps = 350;
@@ -127,6 +153,10 @@ int main() {
     BSMModelImplementation(n_options);
 
     BinomialTreeImplementation(n_steps, (n_options/1000));
+
+    MonteCarloModelImplementation(1000, 100000);
+
+    OptionSurfaceImplementation();
 
     return 0;
 }

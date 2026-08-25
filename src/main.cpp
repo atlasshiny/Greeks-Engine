@@ -5,6 +5,7 @@
 #include "models/BSMModel.hpp"
 #include "models/MonteCarloModel.hpp"
 #include "Greeks.hpp"
+#include "surfaces/OptionsSurface.hpp"
 
 void BSMModelImplementation() {
     // Example parameters for the BSM model
@@ -94,31 +95,63 @@ void BinomialTreeImplementation() {
     // When Greek calculations are implemented, call the calculateGreeks method similarly to the BSM model.
 }
 
-void MonteCarloImplementation() {
+void MonteCarloImplementation(int n_options, int n_simulations) {
     // Example parameters for the Monte Carlo model
     double S = 100.0;        // Spot price
     double K = 100.0;        // Strike price
     double T = 1.0;          // Time to maturity in years
     double r = 0.05;         // Risk-free interest rate
     double sigma = 0.2;      // Volatility of the underlying asset
-    int numSimulations = 100000; // Number of Monte Carlo simulations
+    int numSimulations = n_simulations; // Number of Monte Carlo simulations
 
     // Statistical parameters to pass into the Monte Carlo model for sampling
     std::random_device rd;  // Random number generator
     std::normal_distribution<double> dist(0.0, 1.0); // Standard normal distribution
 
-    // Create an instance of the MonteCarloModel
-    MonteCarloModel monteCarlo(S, K, T, r, sigma, numSimulations);
+    for (int i = 0; i < n_options; ++i) {
+        // Create an instance of the MonteCarloModel
+        MonteCarloModel monteCarlo(S, K, T, r, sigma, numSimulations);
 
-    // Calculate and display the call and put option prices
-    double callPrice = monteCarlo.price(0, rd, dist); // 0 for call option
-    double putPrice = monteCarlo.price(1, rd, dist);  // 1 for put option
+        // Calculate and display the call and put option prices
+        double callPrice = monteCarlo.price(0, rd, dist); // 0 for call option
+        double putPrice = monteCarlo.price(1, rd, dist);  // 1 for put option
 
-    std::cout << "Monte Carlo Model:" << std::endl;
-    std::cout << "Call Option Price: " << callPrice << std::endl;
-    std::cout << "Put Option Price: " << putPrice << std::endl;
+        std::cout << "Monte Carlo Model (Option " << i + 1 << "):" << std::endl;
+        std::cout << "Call Option Price: " << callPrice << std::endl;
+        std::cout << "Put Option Price: " << putPrice << std::endl;
+        std::cout << std::endl;
+    }
 
     // Note: Greeks calculation is not implemented for Monte Carlo due to computational expense.
+}
+
+void OptionSurfaceImplementation(){
+    // Example parameters for the Option Surface generation
+    int numS = 100;          // Number of spot price points
+    int numVol = 100;       // Number of volatility points
+    float S_min = 50.0f;    // Minimum spot price
+    float S_step = 1.0f;    // Step size for spot price
+    float vol_min = 0.1f;   // Minimum volatility
+    float vol_step = 0.01f; // Step size for volatility
+    float T = 1.0f;         // Time to maturity in years
+    float r = 0.05f;        // Risk-free interest rate
+    float K = 100.0f;       // Strike price
+    int optionType = 0;     // Option type: 0 for Call, 1 for Put
+
+    // Allocate a buffer for the option surface (size numS * numVol)
+    std::vector<float> surface(numS * numVol);
+
+    // Generate the option surface using the BSM pricing policy on CPU
+    OptionSurfaceEngine::generateCPU(
+        surface.data(),
+        numS, numVol,
+        S_min, S_step,
+        vol_min, vol_step,
+        T, r, K, optionType,
+        BSMPolicy()
+    );
+
+    std::cout << "Option Surface generated using BSM model on CPU." << std::endl;
 }
 
 // Runs every model that has been created with default parameters and prints the results to the console
@@ -127,7 +160,9 @@ int main() {
 
     BinomialTreeImplementation();
 
-    MonteCarloImplementation();
+    MonteCarloImplementation(1000, 100000);
+
+    OptionSurfaceImplementation();
 
     return 0;
 }
