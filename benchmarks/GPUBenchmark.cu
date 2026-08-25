@@ -1,9 +1,12 @@
-#include "models/BSMModel.hpp"
-#include "setup.hpp"
-#include "gpu/BSMKernel.cuh"
-#include "gpu/BinomialTreeKernel.cuh"
 #include <benchmark/benchmark.h>
 #include <cuda_runtime.h>
+#include <curand.h>
+#include <curand_kernel.h>
+#include "setup.hpp"
+#include "models/BSMModel.hpp"
+#include "gpu/BSMKernel.cuh"
+#include "gpu/BinomialTreeKernel.cuh"
+#include "gpu/MonteCarloKernel.cuh"
 
 // BSM BENCHMARKS
 
@@ -351,5 +354,86 @@ static void BM_GPU_BinomialTree_Price(benchmark::State& state) {
     cudaFree(d_results);
 }
 BENCHMARK(BM_GPU_BinomialTree_Price)->Range(100, 100000)->UseManualTime();
+
+// MONTE CARLO BENCHMARKS
+
+static void BM_GPU_MonteCarlo_Price(benchmark::State& state) {
+    cudaEvent_t start_compute, stop_compute, start_copy, stop_copy;
+    cudaEventCreate(&start_compute);
+    cudaEventCreate(&stop_compute);
+    cudaEventCreate(&start_copy);
+    cudaEventCreate(&stop_copy);
+
+    int n_options = static_cast<int>(state.range());
+    int n_simulations = 10000;
+
+    // WARM-UP BEFORE BENCHMARKING
+    constexpr int warmup_size = 1000;
+    BenchmarkBatch warmup_data = generateBenchmarkBatch(warmup_size);
+
+    launchMonteCarloPricingKernel(warmup_data.options.data(), warmup_data.mktparams.data(), warmup_data.price_results.data(), n_simulations, warmup_size);
+    cudaDeviceSynchronize();
+
+    // Allocate Device Memory
+    Option *d_options;
+    MarketParams *d_mktparams;
+    double *d_results;
+    curandState_t *d_rng_states;
+
+    cudaMalloc(&d_options, n_options * sizeof(Option));
+    cudaMalloc(&d_mktparams, n_options * sizeof(MarketParams));
+    cudaMalloc(&d_results, n_options * sizeof(double));
+    cudaMalloc(&d_rng_states, n_options * sizeof(curandState_t));
+
+    // Generate test batch
+    BenchmarkBatch data = generateBenchmarkBatch(n_options);
+
+    // Grid Configuration
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (n_options + threadsPerBlock - 1) / threadsPerBlock;
+
+    for (auto _ : state) {
+        // Record H2D Transfer Time
+        cudaEventRecord(start_copy, 0);
+        cudaMemcpy(d_options, data.options.data(), n_options * sizeof(Option), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_mktparams, data.mktparams.data(), n_options * sizeof(MarketParams), cudaMemcpyHostToDevice);
+        cudaEventRecord(stop_copy, 0);
+        cudaEventSynchronize(stop_copy);
+
+        float copy_ms = 0;
+        cudaEventElapsedTime(&copy_ms, start_copy, stop_copy);
+
+        // Record Compute Execution Time
+        cudaDeviceSynchronize();
+        cudaEventRecord(start_compute, 0);
+
+        computeMonteCarloPricingKernel<<<blocksPerGrid, threadsPerBlock>>>(
+            d_options, d_mktparams, d_results, n_simulations, n_options, d_rng_states
+        );
+
+        cudaDeviceSynchronize();
+        cudaEventRecord(stop_compute, 0);
+        cudaEventSynchronize(stop_compute);
+
+        float milliseconds = 0;
+        cudaEventElapsedTime(&milliseconds, start_compute, stop_compute);
+
+        // Report metrics back to Google Benchmark
+        state.SetIterationTime(milliseconds / 1000.0);
+        state.counters["Memcpy_GPU_ms"] = copy_ms;
+    }
+
+    // Cleanup Events & GPU Memory
+    cudaEventDestroy(start_compute);
+    cudaEventDestroy(stop_compute);
+    cudaEventDestroy(start_copy);
+    cudaEventDestroy(stop_copy);
+
+    cudaFree(d_options);
+    cudaFree(d_mktparams);
+    cudaFree(d_results);
+    cudaFree(d_rng_states);
+}
+BENCHMARK(BM_GPU_MonteCarlo_Price)->Range(100, 100000)->UseManualTime();
 
 BENCHMARK_MAIN();
