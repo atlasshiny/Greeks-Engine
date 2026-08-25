@@ -138,12 +138,8 @@ void OptionSurfaceImplementation(){
     float K = 100.0f;       // Strike price
     int optionType = 0;     // Option type: 0 for Call, 1 for Put
 
-    // Allocate a buffer for the option surface (size numS * numVol)
-    std::vector<float> surface(numS * numVol);
-
     // Generate the option surface using the BSM pricing policy on CPU
-    OptionSurfaceEngine::generateCPU(
-        surface.data(),
+    std::vector<float> surface = OptionSurfaceEngine::generateCPU(
         numS, numVol,
         S_min, S_step,
         vol_min, vol_step,
