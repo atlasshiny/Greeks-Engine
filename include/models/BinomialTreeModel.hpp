@@ -147,13 +147,15 @@ struct BinomialTreePolicy {
     float q;
     bool isAmerican;
 
-    HOST_DEVICE BinomialTreePolicy(float q = 0.0, bool isAmerican = true) 
+    // Constructor accepts model-specific configuration
+    HOST_DEVICE BinomialTreePolicy(float q = 0.0f, bool isAmerican = false) 
         : q(q), isAmerican(isAmerican) {}
 
-    MODEL_POLICY float operator()(float S, float K, float T, float r, float sigma, float q, int optionType) const {
+    // Standardized 6-parameter interface
+    MODEL_POLICY float operator()(float S, float K, float T, float r, float sigma, int optionType) const {
         double buffer[steps + 1];
 
-        BinomialTreeModel model(S, K, T, r, sigma, q, steps);
+        BinomialTreeModel model(S, K, T, r, sigma, q, steps, isAmerican);
         return model.price(optionType, buffer);
     }
 };
