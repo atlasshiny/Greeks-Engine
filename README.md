@@ -12,7 +12,7 @@ A GPU-accelerated option pricing library in C++20. Implements the Black-Scholes-
 - Prices European calls and puts with the Black-Scholes-Merton model & Monte Carlo simulation.
 - Prices European and American options with the binomial tree model.
 - Computes the major Greeks exposed by each model.
-- Plots calulated prices into a 3D mesh.
+- Plots calculated prices into a 3D mesh.
 - Provides CPU and GPU executable entry points from the same codebase.
 - Includes GoogleTest unit tests and Google Benchmark benchmarks.
 - CMake auto-detects CUDA; builds CPU-only if no GPU is found.
