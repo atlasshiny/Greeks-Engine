@@ -5,13 +5,14 @@
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-A GPU-accelerated option pricing library in C++20. Implements the Black-Scholes-Merton model and Monte Carlo simulation for European options and the Binomial Tree model for American options computing prices and all five major Greeks (Δ, Γ, ν, θ, ρ) on both CPU and CUDA GPU from a single  header-only codebase.
+A GPU-accelerated option pricing library in C++20. Implements the Black-Scholes-Merton model and Monte Carlo simulation for European options and the Binomial Tree model for American options computing prices and all five major Greeks (Δ, Γ, ν, θ, ρ) on both CPU and CUDA GPU from a single  header-only codebase. Additionally, the calculated results from the previously mentioned models can be plotted into a 3D options surface.
 
 ## Features
 
 - Prices European calls and puts with the Black-Scholes-Merton model & Monte Carlo simulation.
 - Prices European and American options with the binomial tree model.
 - Computes the major Greeks exposed by each model.
+- Plots calulated prices into a 3D mesh.
 - Provides CPU and GPU executable entry points from the same codebase.
 - Includes GoogleTest unit tests and Google Benchmark benchmarks.
 - CMake auto-detects CUDA; builds CPU-only if no GPU is found.
@@ -26,6 +27,8 @@ Greeks-Engine/
 │   ├── MarketParameters.hpp
 │   ├── Option.hpp
 │   ├── macros.hpp
+│   ├── surfaces/
+│   │   └── OptionsSurface.hpp
 │   ├── math/
 |   |   ├── gbm.hpp
 │   │   ├── normcdf.hpp
@@ -101,13 +104,16 @@ Runs the batch BSM and binomial tree examples from [src/main.cu](src/main.cu) wh
 
 Use CTest or the generated test executable from the build tree.
 
-## Benchmarks
+## Benchmarks & Plots
 The benchmark sources live in [benchmarks/CPUBenchmark.cpp](benchmarks/CPUBenchmark.cpp) and [benchmarks/GPUBenchmark.cu](benchmarks/GPUBenchmark.cu). The plotting helper is [benchmarks/plot.py](benchmarks/plot.py). 
 
 ### High-Level Benchmark Plots
 ![Performance Comparison BSM](diagrams/BSM/performance_pointplot.png)
 ![Performance Comparison BinomialTree](diagrams/BinomialTree/performance_pointplot.png)
 For a more in-depth benchmark review, visit the [benchmarking document](benchmarks/benchmark.md).
+
+### Option Surface Plots
+![Option Surface](diagrams/option_surface.png)
 
 ## Notes
 
