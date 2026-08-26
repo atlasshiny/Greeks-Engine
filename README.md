@@ -110,6 +110,7 @@ The benchmark sources live in [benchmarks/CPUBenchmark.cpp](benchmarks/CPUBenchm
 ### High-Level Benchmark Plots
 ![Performance Comparison BSM](diagrams/BSM/performance_pointplot.png)
 ![Performance Comparison BinomialTree](diagrams/BinomialTree/performance_pointplot.png)
+
 For a more in-depth benchmark review, visit the [benchmarking document](benchmarks/benchmark.md).
 
 ### Option Surface Plots
