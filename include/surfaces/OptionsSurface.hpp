@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <fstream>
+#include <iostream>
 #include "macros.hpp"
 
 // CUDA Kernel Definition (Parsed only during CUDA compilation)
