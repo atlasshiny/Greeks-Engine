@@ -42,6 +42,18 @@ public:
         return Greeks{delta, gamma, vega, theta, rho};
     };
 
+    // Used to update the model parameters for batch processing without creating a new instance
+    HOST_DEVICE inline void setParameters(double S_, double K_, double T_, double r_, double sigma_, double q_, int steps_, bool isAmerican_) {
+        S = S_;
+        K = K_;
+        T = T_;
+        r = r_;
+        sigma = sigma_;
+        q = q_;
+        N = steps_;
+        isAmerican = isAmerican_;
+    }
+
 private:
     int N;         // Number of time steps
     double S;      // Current stock price

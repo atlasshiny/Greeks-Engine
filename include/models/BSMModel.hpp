@@ -28,6 +28,15 @@ public:
         }
     };
 
+    // Used to update the model parameters for batch processing without creating a new instance
+    HOST_DEVICE inline void setParameters(double S_, double K_, double T_, double r_, double sigma_) {
+        S = S_;
+        K = K_;
+        T = T_;
+        r = r_;
+        sigma = sigma_;
+    }
+
 private:
     double S; // Spot price
     double K; // Strike price

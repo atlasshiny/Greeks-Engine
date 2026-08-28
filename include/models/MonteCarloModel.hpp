@@ -32,6 +32,17 @@ public:
         }
     #endif
 
+    // Used to update the model parameters for batch processing without creating a new instance
+    HOST_DEVICE inline void setParameters(double S_, double K_, double T_, double r_, double sigma_, int numSimulations_) {
+        S = S_;
+        K = K_;
+        T = T_;
+        r = r_;
+        sigma = sigma_;
+        numSimulations = numSimulations_;
+        gbm = MathUtils::GBMProcess(S, r, sigma);
+    }
+
     // Note the lack of a calculateGreeks method. If they were to be calculated, they would likely be calculated using 
     // finite differences similar to the BinomialTreeModel class. Because it is substantially more expensive to calculate Greeks 
     // using Monte Carlo simulations, they are not implemented here for now (if they are ever implemented).
