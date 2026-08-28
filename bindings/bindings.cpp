@@ -188,7 +188,7 @@ PYBIND11_MODULE(GreeksEngine, m) {
         .def(py::init<double, double, double, double, double>(),
              py::arg("S"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"))
         .def("price", &BSMModel::price, py::arg("optionType"))
-        .def("calculate_greeks", &BSMModel::calculateGreeks, py::arg("optionType"));
+        .def("calculate_greeks", &BSMModel::calculateGreeks, py::arg("optionType"))
         .def("set_parameters", &BSMModel::setParameters, 
              py::arg("S"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"),
              "Update model parameters for batch processing without creating a new instance.");
@@ -212,7 +212,7 @@ PYBIND11_MODULE(GreeksEngine, m) {
              py::arg("S"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"), py::arg("numSimulations"))
         .def("price", [](const MonteCarloModel& self, int optionType, std::mt19937& gen, std::normal_distribution<double>& dist) {
             return self.price(optionType, gen, dist);
-        });
+        })
         .def("set_parameters", &MonteCarloModel::setParameters, 
              py::arg("S"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"), py::arg("numSimulations"),
              "Update model parameters for batch processing without creating a new instance.");
