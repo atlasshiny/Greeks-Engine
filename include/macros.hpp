@@ -4,9 +4,11 @@
 #ifdef __CUDACC__
     #define HOST_DEVICE __host__ __device__
     #define DEVICE __device__
+    #define HOST __host__
 #else
     #define HOST_DEVICE
     #define DEVICE
+    #define HOST
 #endif
 
 // Macro for model policy structs
