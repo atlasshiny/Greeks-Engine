@@ -189,6 +189,9 @@ PYBIND11_MODULE(GreeksEngine, m) {
              py::arg("S"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"))
         .def("price", &BSMModel::price, py::arg("optionType"))
         .def("calculate_greeks", &BSMModel::calculateGreeks, py::arg("optionType"));
+        .def("set_parameters", &BSMModel::setParameters, 
+             py::arg("S"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"),
+             "Update model parameters for batch processing without creating a new instance.");
 
     // Submodule: Binomial
     py::module_ binomial = m.def_submodule("binomial", "Binomial Tree Pricing Module");    
@@ -202,6 +205,11 @@ PYBIND11_MODULE(GreeksEngine, m) {
                  "Batch price options on GPU using CUDA.");
 #endif
 
+    binomial.def("set_parameters", &BinomialTreeModel::setParameters, 
+                 py::arg("S"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"), 
+                 py::arg("q"), py::arg("steps"), py::arg("isAmerican"),
+                 "Update model parameters for batch processing without creating a new instance.");
+
     // Submodule: Monte Carlo
     py::module_ mc = m.def_submodule("monte_carlo", "Monte Carlo Pricing Module");
     py::class_<MonteCarloModel>(mc, "MonteCarloModel")
@@ -210,6 +218,10 @@ PYBIND11_MODULE(GreeksEngine, m) {
         .def("price", [](const MonteCarloModel& self, int optionType, std::mt19937& gen, std::normal_distribution<double>& dist) {
             return self.price(optionType, gen, dist);
         });
+        .def("set_parameters", &MonteCarloModel::setParameters, 
+             py::arg("S"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"), py::arg("numSimulations"),
+             "Update model parameters for batch processing without creating a new instance.");
+
 
     // Submodule: Surfaces
     py::module_ se = m.def_submodule("surface_engine", "Surface Engine");
