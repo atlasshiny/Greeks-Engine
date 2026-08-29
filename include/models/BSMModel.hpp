@@ -1,10 +1,9 @@
 #pragma once
 #include "Greeks.hpp"
 #include "Option.hpp"
-#include "math/normcdf.hpp"
-#include "math/normpdf.hpp"
 #include "macros.hpp"
-#include <cmath>
+#include "math/normpdf.hpp"
+#include "math/BSMMath.hpp"
 
 class BSMModel {
 public:
@@ -13,19 +12,11 @@ public:
         : S(S), K(K), T(T), r(r), sigma(sigma) {};
 
     HOST_DEVICE inline double price(int optionType) const {
-        if (optionType == 0) {
-            return callPrice();
-        } else {
-            return putPrice();
-        }
+        return (optionType == 0) ? callPrice() : putPrice();
     };
 
     HOST_DEVICE inline Greeks calculateGreeks(int optionType) const {
-        if (optionType == 0) {
-            return callGreeks();
-        } else {
-            return putGreeks();
-        }
+        return (optionType == 0) ? callGreeks() : putGreeks();
     };
 
     // Used to update the model parameters for batch processing without creating a new instance
@@ -42,79 +33,34 @@ private:
     double K; // Strike price
     double T; // Time to maturity in years
     double r; // Risk-free interest rate
-    double sigma; // Volatility of the underlying asset (annualized)
-
-    // Helper method to calculate d1
-    HOST_DEVICE inline double d1() const {
-        double numerator = std::log(S / K) + (r + 0.5 * sigma * sigma) * T;
-        double denominator = sigma * std::sqrt(T);
-        return numerator / denominator;
-    };
-
-    // Helper method to calculate d2
-    HOST_DEVICE inline double d2(double d1_val) const {
-        return d1_val - sigma * std::sqrt(T);
-    }
-
-    // Helper method to calculate greeks for both call and put options (delta, gamma, vega, theta, rho)
-    // This helper specifically calculates the common Greeks for both call and put options (delta, gamma, vega, rho)
-    HOST_DEVICE inline void calculateCommonGreeks(bool isCall, double d1_val, double d2_val, double pdf_d1, Greeks& greeks) const {
-        // Delta
-        if (isCall) {
-            greeks.delta = MathUtils::normcdf(d1_val);
-        } else {
-            greeks.delta = MathUtils::normcdf(d1_val) - 1;
-        }
-
-        // Gamma
-        greeks.gamma = pdf_d1 / (S * sigma * std::sqrt(T));
-
-        // Vega
-        greeks.vega = S * pdf_d1 * std::sqrt(T);
-
-        // Rho
-        if (isCall) {
-            greeks.rho = K * T * std::exp(-r * T) * MathUtils::normcdf(d2_val);
-        } else {
-            greeks.rho = -K * T * std::exp(-r * T) * MathUtils::normcdf(-d2_val);
-        }
-    }
-    
-    // This helper specifically calculates the theta for both call and put options
-    HOST_DEVICE inline void calculateCallTheta(double d2_val, double pdf_d1, Greeks& greeks) const {
-        greeks.theta = (-S * pdf_d1 * sigma) / (2 * std::sqrt(T)) - r * K * std::exp(-r * T) * MathUtils::normcdf(d2_val);
-    }
-
-    HOST_DEVICE inline void calculatePutTheta(double d2_val, double pdf_d1, Greeks& greeks) const {
-        greeks.theta = (-S * pdf_d1 * sigma) / (2 * std::sqrt(T)) + r * K * std::exp(-r * T) * MathUtils::normcdf(-d2_val);
-    }
+    double sigma; // Volatility
 
     // Method to calculate the price of a call option
     HOST_DEVICE inline double callPrice() const {
-        double d1_val = d1();
-        double d2_val = d2(d1_val);
-
-        return S * MathUtils::normcdf(d1_val) - K * std::exp(-r * T) * MathUtils::normcdf(d2_val);
+        double d1_val = BSMMath::d1(S, K, T, r, sigma);
+        double d2_val = BSMMath::d2(d1_val, sigma, T);
+        return BSMMath::callPrice(S, K, T, r, d1_val, d2_val);
     }
 
     // Method to calculate the price of a put option
     HOST_DEVICE inline double putPrice() const {
-        double d1_val = d1();
-        double d2_val = d2(d1_val);
-
-        return K * std::exp(-r * T) * MathUtils::normcdf(-d2_val) - S * MathUtils::normcdf(-d1_val);
+        double d1_val = BSMMath::d1(S, K, T, r, sigma);
+        double d2_val = BSMMath::d2(d1_val, sigma, T);
+        return BSMMath::putPrice(S, K, T, r, d1_val, d2_val);
     }
 
     // Method to calculate the Greeks for a call option
     HOST_DEVICE inline Greeks callGreeks() const {
         Greeks greeks;
-
-        double d1_val = d1();
-        double d2_val = d2(d1_val);
+        double d1_val = BSMMath::d1(S, K, T, r, sigma);
+        double d2_val = BSMMath::d2(d1_val, sigma, T);
         double pdf_d1 = MathUtils::normpdf(d1_val);
 
-        calculateCommonGreeks(true, d1_val, d2_val, pdf_d1, greeks);
-        calculateCallTheta(d2_val, pdf_d1, greeks);
+        greeks.delta = BSMMath::callDelta(d1_val);
+        greeks.gamma = BSMMath::gamma(S, sigma, T, pdf_d1);
+        greeks.vega  = BSMMath::vega(S, T, pdf_d1);
+        greeks.theta = BSMMath::callTheta(S, K, T, r, sigma, d2_val, pdf_d1);
+        greeks.rho   = BSMMath::callRho(K, T, r, d2_val);
 
         return greeks;
     }
@@ -122,13 +68,15 @@ private:
     // Method to calculate the Greeks for a put option
     HOST_DEVICE inline Greeks putGreeks() const {
         Greeks greeks;
-
-        double d1_val = d1();
-        double d2_val = d2(d1_val);
+        double d1_val = BSMMath::d1(S, K, T, r, sigma);
+        double d2_val = BSMMath::d2(d1_val, sigma, T);
         double pdf_d1 = MathUtils::normpdf(d1_val);
 
-        calculateCommonGreeks(false, d1_val, d2_val, pdf_d1, greeks);
-        calculatePutTheta(d2_val, pdf_d1, greeks);
+        greeks.delta = BSMMath::putDelta(d1_val);
+        greeks.gamma = BSMMath::gamma(S, sigma, T, pdf_d1);
+        greeks.vega  = BSMMath::vega(S, T, pdf_d1);
+        greeks.theta = BSMMath::putTheta(S, K, T, r, sigma, d2_val, pdf_d1);
+        greeks.rho   = BSMMath::putRho(K, T, r, d2_val);
 
         return greeks;
     }
@@ -138,7 +86,6 @@ private:
 struct BSMPolicy {
     MODEL_POLICY float operator()(float S, float K, float T, float r, float sigma, int optionType) const {
         BSMModel model(S, K, T, r, sigma);
-        
-        return model.price(optionType); 
+        return static_cast<float>(model.price(optionType));
     }
 };
