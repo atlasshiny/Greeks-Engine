@@ -2,7 +2,7 @@
 #include <torch/torch.h>
 #include "setup.hpp"
 #include "models/BSMModel.hpp"
-#include "PhysicsInformedNN.hpp"
+#include "models/PhysicsInformedNN.hpp"
 
 #ifdef __CUDACC__
 #include <cuda_runtime.h>
