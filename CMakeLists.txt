@@ -54,7 +54,6 @@ find_package(Torch REQUIRED)
 
 # Torch Configs
 set(TORCH_CUDA_ARCH_LIST native)
-set(USE_KINETO OFF)
 
 # CUDA Kernel Library Creation
 if(CUDAToolkit_FOUND)
@@ -97,7 +96,14 @@ endif()
 add_executable(GreeksEnginePINN
     src/PINN.cpp
 )
+target_link_libraries(GreeksEnginePINN PRIVATE ${TORCH_LIBRARIES})
 target_include_directories(GreeksEnginePINN PRIVATE include)
+
+# Remove Torch compiler warnings
+if (MSVC)
+    # Target-specific suppression
+    target_compile_options(GreeksEnginePINN PRIVATE /wd4267)
+endif()
 
 # Python Module Bindings
 pybind11_add_module(GreeksEngine bindings/bindings.cpp)
