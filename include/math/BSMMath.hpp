@@ -62,4 +62,18 @@ HOST_DEVICE inline double putRho(double K, double T, double r, double d2_val) {
     return -K * T * std::exp(-r * T) * MathUtils::normcdf(-d2_val);
 }
 
+// Black-Scholes PDE Residual
+template <typename T_V, typename T_dS, typename T_dS2, typename T_dT, typename T_S, typename T_r, typename T_sig>
+HOST_DEVICE inline auto pdeResidual(
+    const T_V& V, 
+    const T_dS& dV_dS, 
+    const T_dS2& d2V_dS2, 
+    const T_dT& dV_dT, 
+    const T_S& S, 
+    const T_r& r, 
+    const T_sig& sigma) 
+{
+    return -dV_dT + 0.5 * (sigma * sigma) * (S * S) * d2V_dS2 + r * S * dV_dS - r * V;
+}
+
 }
