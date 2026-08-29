@@ -64,7 +64,7 @@ HOST_DEVICE inline double putRho(double K, double T, double r, double d2_val) {
 
 // Black-Scholes PDE Residual
 template <typename T_V, typename T_dS, typename T_dS2, typename T_dT, typename T_S, typename T_r, typename T_sig>
-HOST_DEVICE inline auto pdeResidual(
+HOST inline auto pdeResidual(
     const T_V& V, 
     const T_dS& dV_dS, 
     const T_dS2& d2V_dS2, 
