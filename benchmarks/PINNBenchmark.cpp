@@ -65,7 +65,7 @@ static void BM_CPU_PINN_EvaluateGreeks(benchmark::State& state) {
 
     for (auto _ : state) {
         auto greeks = model.evaluate_greeks(S, K, T, r, sigma);
-        benchmark::DoNotOptimize(greeks.data_ptr());
+        benchmark::DoNotOptimize(&greeks);
     }
 }
 BENCHMARK(BM_CPU_PINN_EvaluateGreeks)->Range(100, 100000);
