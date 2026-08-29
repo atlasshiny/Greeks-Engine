@@ -2,7 +2,10 @@
 #include <torch/torch.h>
 #include <c10/cuda/CUDAStream.h>
 #include "math/BSMMath.hpp"
+
+#ifdef __CUDACC__
 #include "gpu/BSMKernel.cuh"
+#endif
 
 struct PredictedGreeks {
     torch::Tensor price;
