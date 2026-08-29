@@ -49,6 +49,13 @@ FetchContent_MakeAvailable(
     pybind11
 )
 
+# Adding Torch the traditional way since it can't be reliably pulled using FetchContent
+find_package(Torch REQUIRED)
+
+# Torch Configs
+set(TORCH_CUDA_ARCH_LIST native)
+set(USE_KINETO OFF)
+
 # CUDA Kernel Library Creation
 if(CUDAToolkit_FOUND)
     add_library(gpu_kernels STATIC
@@ -85,6 +92,12 @@ if(CUDAToolkit_FOUND)
     target_include_directories(GreeksEngineGPU PRIVATE include)
     target_link_libraries(GreeksEngineGPU PRIVATE gpu_kernels CUDA::cudart)
 endif()
+
+# PyTorch C++ Executable
+add_executable(GreeksEnginePINN
+    src/PINN.cpp
+)
+target_include_directories(GreeksEnginePINN PRIVATE include)
 
 # Python Module Bindings
 pybind11_add_module(GreeksEngine bindings/bindings.cpp)
