@@ -1,4 +1,5 @@
 #pragma once
+#include <cuda_runtime.h>
 #include "Option.hpp"
 #include "MarketParameters.hpp"
 #include "Greeks.hpp"
@@ -14,3 +15,27 @@ __global__ void computeBSMPricingKernel(const Option* option, const MarketParams
 
 // The Bridge Function for the pricing calculation: Orchestrates memory and execution
 void launchBSMPricingKernel(const Option* h_options, const MarketParams* h_mktparams, double* h_results, int n);
+
+// Torch Tensor Operations
+__global__ void computeBSMPricingTensorKernel(
+    const double* __restrict__ S, 
+    const double* __restrict__ K, 
+    const double* __restrict__ T, 
+    const double* __restrict__ r, 
+    const double* __restrict__ sigma, 
+    const int* __restrict__ option_type, 
+    double* __restrict__ results, 
+    int n
+);
+
+void launchBSMPricingTensorKernel(
+    const double* d_S, 
+    const double* d_K, 
+    const double* d_T,
+    const double* d_r, 
+    const double* d_sigma, 
+    const int* d_option_type,
+    double* d_results, 
+    int n, 
+    cudaStream_t stream = 0
+);
