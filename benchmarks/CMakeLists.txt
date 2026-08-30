@@ -36,6 +36,7 @@ add_executable(pinn_benchmark
 target_include_directories(pinn_benchmark PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/../include 
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${TORCH_INCLUDE_DIRS}
 )
 
 if(CUDAToolkit_FOUND)
@@ -67,5 +68,31 @@ else()
     target_link_libraries(pinn_benchmark PRIVATE
         benchmark::benchmark_main
         ${TORCH_LIBRARIES}
+    )
+endif()
+
+# WINDOWS DLL RESOLUTION & RUN TARGETS FOR PINN BENCHMARK
+if (WIN32)
+    # Post-build DLL deployment directly next to pinn_benchmark.exe
+    add_custom_command(TARGET pinn_benchmark POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${TORCH_LIB_DIR}"
+            "$<TARGET_FILE_DIR:pinn_benchmark>"
+        COMMENT "Deploying PyTorch dynamic libraries to benchmarks output directory..."
+    )
+
+    # Visual Studio IDE Debugging Path setup
+    set_property(TARGET pinn_benchmark PROPERTY
+        VS_DEBUGGER_ENVIRONMENT "PATH=${TORCH_LIB_DIR};${PYTHON_SITE_PACKAGES}/nvidia/cuda_runtime/bin;${PYTHON_SITE_PACKAGES}/nvidia/cublas/bin;${CUDAToolkit_BIN_DIR};%PATH%"
+    )
+
+    # Custom Run Target for CLI Execution
+    add_custom_target(run_pinn_benchmark
+        COMMAND ${CMAKE_COMMAND} -E env 
+            "PATH=${TORCH_LIB_DIR};${PYTHON_SITE_PACKAGES}/nvidia/cuda_runtime/bin;${PYTHON_SITE_PACKAGES}/nvidia/cublas/bin;${CUDAToolkit_BIN_DIR};$ENV{PATH}"
+            "$<TARGET_FILE:pinn_benchmark>"
+        DEPENDS pinn_benchmark
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:pinn_benchmark>"
+        COMMENT "Running pinn_benchmark with runtime CUDA & PyTorch PATH injected..."
     )
 endif()

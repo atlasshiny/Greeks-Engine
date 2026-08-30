@@ -14,6 +14,8 @@ if(CUDAToolkit_FOUND)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_ARCHITECTURES native)
 
+    add_compile_definitions(USE_CUDA)
+
     message("CUDA found; Building GPU and CPU")
 else()
     message("No CUDA found; Building CPU only")
@@ -49,7 +51,36 @@ FetchContent_MakeAvailable(
     pybind11
 )
 
-# Adding Torch the traditional way since it can't be reliably pulled using FetchContent
+# GLOBAL PYTHON & TORCH PATH RESOLUTION
+find_package(Python COMPONENTS Interpreter REQUIRED)
+
+execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c "import torch; print(torch.utils.cmake_prefix_path)"
+    OUTPUT_VARIABLE TORCH_CMAKE_PREFIX
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+if (EXISTS "${TORCH_CMAKE_PREFIX}")
+    list(APPEND CMAKE_PREFIX_PATH "${TORCH_CMAKE_PREFIX}")
+endif()
+
+execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c "import torch, os; print(os.path.normcase(os.path.join(os.path.dirname(torch.__file__), 'lib')))"
+    OUTPUT_VARIABLE TORCH_LIB_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c "import site; print(site.getsitepackages()[0])"
+    OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Expose discovered paths to subdirectories (like /benchmarks)
+set(TORCH_LIB_DIR "${TORCH_LIB_DIR}" CACHE INTERNAL "PyTorch Lib Directory")
+set(PYTHON_SITE_PACKAGES "${PYTHON_SITE_PACKAGES}" CACHE INTERNAL "Python Site Packages Directory")
+
+# Find PyTorch Package
 find_package(Torch REQUIRED)
 
 # Torch Configs
@@ -97,12 +128,32 @@ add_executable(GreeksEnginePINN
     src/PINN.cpp
 )
 target_link_libraries(GreeksEnginePINN PRIVATE ${TORCH_LIBRARIES})
-target_include_directories(GreeksEnginePINN PRIVATE include)
+target_include_directories(GreeksEnginePINN PRIVATE 
+    include 
+    ${TORCH_INCLUDE_DIRS}
+)
+
 
 # Remove Torch compiler warnings
 if (MSVC)
     # Target-specific suppression
     target_compile_options(GreeksEnginePINN PRIVATE /wd4267)
+endif()
+
+# AUTOMATED WINDOWS RUNTIME DEPENDENCY DEPLOYMENT FOR MAIN BINARY
+if (WIN32)
+    # Copy core PyTorch libraries (torch_cuda.dll, c10.dll, etc.)
+    add_custom_command(TARGET GreeksEnginePINN POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${TORCH_LIB_DIR}"
+            "$<TARGET_FILE_DIR:GreeksEnginePINN>"
+        COMMENT "Deploying PyTorch runtime DLLs..."
+    )
+
+    # Set Visual Studio Debugger PATH setup for PyTorch and CUDA runtime DLLs
+    set_property(TARGET GreeksEnginePINN PROPERTY
+        VS_DEBUGGER_ENVIRONMENT "PATH=${TORCH_LIB_DIR};${PYTHON_SITE_PACKAGES}/nvidia/cuda_runtime/bin;${PYTHON_SITE_PACKAGES}/nvidia/cublas/bin;${CUDAToolkit_BIN_DIR};%PATH%"
+    )
 endif()
 
 # Python Module Bindings
