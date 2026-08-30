@@ -29,15 +29,20 @@ target_include_directories(cpu_benchmark PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../
 target_link_libraries(cpu_benchmark PRIVATE benchmark::benchmark_main)
 
 # PINN Benchmark
-add_executable(pinn_benchmark
-    PINNBenchmark.cpp
-)
+if(Torch_FOUND)
+    add_executable(pinn_benchmark 
+        PINNBenchmark.cpp 
+    )
+    target_include_directories(pinn_benchmark PRIVATE 
+        ${PROJECT_SOURCE_DIR}/include
+        include
+    )
+    target_link_libraries(pinn_benchmark PRIVATE ${TORCH_LIBRARIES})
 
-target_include_directories(pinn_benchmark PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include 
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${TORCH_INCLUDE_DIRS}
-)
+    if(CUDAToolkit_FOUND)
+        set_property(TARGET pinn_benchmark PROPERTY CUDA_ARCHITECTURES native)
+    endif()
+endif()
 
 if(CUDAToolkit_FOUND)
     # Force NVCC to compile the .cpp file so __CUDACC__ is defined
