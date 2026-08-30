@@ -71,7 +71,7 @@ if(CUDAToolkit_FOUND)
 endif()
 
 # WINDOWS DLL RESOLUTION & RUN TARGETS FOR PINN BENCHMARK
-if (WIN32)
+if (WIN32 AND Torch_FOUND)
     # Post-build DLL deployment directly next to pinn_benchmark.exe
     add_custom_command(TARGET pinn_benchmark POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
