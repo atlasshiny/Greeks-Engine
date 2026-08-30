@@ -3,8 +3,9 @@
 #include <c10/cuda/CUDAStream.h>
 #include "math/BSMMath.hpp"
 
-#ifdef __CUDACC__
-#include "gpu/BSMKernel.cuh"
+#ifdef USE_CUDA
+    #include <cuda_runtime.h>
+    #include "gpu/BSMKernel.cuh"
 #endif
 
 struct PredictedGreeks {
@@ -22,7 +23,12 @@ public:
         // Input dimension is 5 to account for {S, K, T, r, sigma}
         : fc1(register_module("fc1", torch::nn::Linear(5, 64))),
           fc2(register_module("fc2", torch::nn::Linear(64, 64))),
-          fc3(register_module("fc3", torch::nn::Linear(64, 1))) {}
+          fc3(register_module("fc3", torch::nn::Linear(64, 1))) {
+            // Ensure the model operates in double precision
+            fc1->to(torch::kFloat64);
+            fc2->to(torch::kFloat64);
+            fc3->to(torch::kFloat64);
+          }
 
     torch::Tensor forward(torch::Tensor x) {
         x = torch::tanh(fc1->forward(x)); // Smooth activation for 2nd derivatives
@@ -39,33 +45,39 @@ public:
         auto options = torch::TensorOptions().dtype(torch::kFloat64).device(S.device());
         auto target_prices = torch::empty({n, 1}, options);
 
-    #ifdef __CUDACC__
-        // GPU Path: Launch CUDA kernel for batch Black-Scholes pricing
-        cudaStream_t stream = c10::cuda::getCurrentCUDAStream().stream();
-        launchBSMPricingTensorKernel(
-            S.data_ptr<double>(), K.data_ptr<double>(), T.data_ptr<double>(),
-            r.data_ptr<double>(), sigma.data_ptr<double>(), opt_type.data_ptr<int>(),
-            target_prices.data_ptr<double>(), n, stream
-        );
-    #else
-        // CPU Path: Standard CPU host loop using shared BSMMath
-        auto S_a = S.accessor<double, 2>();
-        auto K_a = K.accessor<double, 2>();
-        auto T_a = T.accessor<double, 2>();
-        auto r_a = r.accessor<double, 2>();
-        auto sig_a = sigma.accessor<double, 2>();
-        auto opt_a = opt_type.accessor<int, 2>();
-        auto out_a = target_prices.accessor<double, 2>();
+        // ONLY execute custom CUDA kernel if input tensors reside on GPU
+        if (S.is_cuda()) {
+            
+        #ifdef USE_CUDA
+            cudaStream_t stream = c10::cuda::getCurrentCUDAStream().stream();
+            launchBSMPricingTensorKernel(
+                S.data_ptr<double>(), K.data_ptr<double>(), T.data_ptr<double>(),
+                r.data_ptr<double>(), sigma.data_ptr<double>(), opt_type.data_ptr<int>(),
+                target_prices.data_ptr<double>(), n, stream
+            );
+        #else
+            TORCH_CHECK(false, "Tensor is on CUDA, but project compiled without CUDA support!");
+        #endif
 
-        #pragma omp parallel for
-        for (int i = 0; i < n; ++i) {
-            double d1 = BSMMath::d1(S_a[i][0], K_a[i][0], T_a[i][0], r_a[i][0], sig_a[i][0]);
-            double d2 = BSMMath::d2(d1, sig_a[i][0], T_a[i][0]);
-            out_a[i][0] = (opt_a[i][0] == 0) 
-                ? BSMMath::callPrice(S_a[i][0], K_a[i][0], T_a[i][0], r_a[i][0], d1, d2)
-                : BSMMath::putPrice(S_a[i][0], K_a[i][0], T_a[i][0], r_a[i][0], d1, d2);
+        } else {
+            // CPU fallback execution
+            auto S_a = S.accessor<double, 2>();
+            auto K_a = K.accessor<double, 2>();
+            auto T_a = T.accessor<double, 2>();
+            auto r_a = r.accessor<double, 2>();
+            auto sig_a = sigma.accessor<double, 2>();
+            auto opt_a = opt_type.accessor<int, 2>();
+            auto out_a = target_prices.accessor<double, 2>();
+
+            #pragma omp parallel for
+            for (int i = 0; i < n; ++i) {
+                double d1 = BSMMath::d1(S_a[i][0], K_a[i][0], T_a[i][0], r_a[i][0], sig_a[i][0]);
+                double d2 = BSMMath::d2(d1, sig_a[i][0], T_a[i][0]);
+                out_a[i][0] = (opt_a[i][0] == 0) 
+                    ? BSMMath::callPrice(S_a[i][0], K_a[i][0], T_a[i][0], r_a[i][0], d1, d2)
+                    : BSMMath::putPrice(S_a[i][0], K_a[i][0], T_a[i][0], r_a[i][0], d1, d2);
             }
-    #endif   
+        }   
         return target_prices;
 
     }
@@ -82,56 +94,72 @@ public:
             target_price = generate_targets(S, K, T, r, sigma, opt_type);
         }
 
-        // Enable Autograd input tracking
-        S.requires_grad_(true);
-        T.requires_grad_(true);
-
-        // Concatenate 5 features to shape (N, 5)
+        // Concatenate raw inputs, then make the concatenated block track gradients
         auto input = torch::cat({S, K, T, r, sigma}, /*dim=*/1);
+        input.requires_grad_(true);
+
         auto V = forward(input);
         auto data_loss = torch::mse_loss(V, target_price);
 
-        // Compute Derivatives via Autograd
         auto ones = torch::ones_like(V);
-        auto grads = torch::autograd::grad({V}, {S, T}, {ones}, /*create_graph=*/true);
-        auto dV_dS = grads[0];
-        auto dV_dT = grads[1];
+        
+        // 1. First-order derivative w.r.t input
+        auto grads = torch::autograd::grad({V}, {input}, {ones}, 
+                                        /*create_graph=*/true, 
+                                        /*retain_graph=*/true, 
+                                        /*allow_unused=*/true)[0];
 
-        auto d2V_dS2 = torch::autograd::grad({dV_dS}, {S}, {ones}, /*create_graph=*/true)[0];
+        // Slice out dV/dS (col 0) and dV/dT (col 2)
+        auto dV_dS = grads.slice(/*dim=*/1, /*start=*/0, /*end=*/1);
+        auto dV_dT = grads.slice(/*dim=*/1, /*start=*/2, /*end=*/3);
 
-        // Shared BSM PDE Residual evaluation
+        // 2. Second-order derivative d2V/dS2
+        auto d2_grads = torch::autograd::grad({dV_dS}, {input}, {ones}, 
+                                            /*create_graph=*/true, 
+                                            /*retain_graph=*/true, 
+                                            /*allow_unused=*/true)[0];
+
+        auto d2V_dS2 = d2_grads.defined() 
+            ? d2_grads.slice(/*dim=*/1, /*start=*/0, /*end=*/1) 
+            : torch::zeros_like(S);
+
         auto pde_residual = BSMMath::pdeResidual(V, dV_dS, d2V_dS2, dV_dT, S, r, sigma);
         auto pde_loss = torch::mean(torch::pow(pde_residual, 2));
 
         return data_loss + (pde_weight * pde_loss);
     }
-
+    
+    // Evaluate the Greeks (Delta, Gamma, Theta, Vega, Rho) for a given set of inputs
     PredictedGreeks evaluate_greeks(
         torch::Tensor S, torch::Tensor K, torch::Tensor T, 
         torch::Tensor r, torch::Tensor sigma) 
     {
-        // Enable gradient tracking on input tensors
-        S.requires_grad_(true);
-        T.requires_grad_(true);
-        r.requires_grad_(true);
-        sigma.requires_grad_(true);
-
         auto input = torch::cat({S, K, T, r, sigma}, /*dim=*/1);
+        input.requires_grad_(true);
+
         auto V = forward(input);
 
         auto ones = torch::ones_like(V);
 
-        // First-order derivatives (Delta, Theta, Rho, Vega)
-        auto grads = torch::autograd::grad({V}, {S, T, r, sigma}, {ones}, /*create_graph=*/true);
-        auto delta = grads[0];
-        auto dV_dT = grads[1];
-        auto rho   = grads[2];
-        auto vega  = grads[3];
+        auto grads = torch::autograd::grad({V}, {input}, {ones}, 
+                                        /*create_graph=*/true, 
+                                        /*retain_graph=*/true, 
+                                        /*allow_unused=*/true)[0];
 
-        // Second-order spatial derivative (Gamma)
-        auto gamma = torch::autograd::grad({delta}, {S}, {ones}, /*create_graph=*/false)[0];
+        auto delta = grads.slice(/*dim=*/1, 0, 1);
+        auto dV_dT = grads.slice(/*dim=*/1, 2, 3);
+        auto rho   = grads.slice(/*dim=*/1, 3, 4);
+        auto vega  = grads.slice(/*dim=*/1, 4, 5);
 
-        // Time decay Theta
+        auto d2_grads = torch::autograd::grad({delta}, {input}, {ones}, 
+                                            /*create_graph=*/false, 
+                                            /*retain_graph=*/true, 
+                                            /*allow_unused=*/true)[0];
+
+        auto gamma = d2_grads.defined() 
+            ? d2_grads.slice(/*dim=*/1, 0, 1) 
+            : torch::zeros_like(S);
+
         auto theta = -dV_dT;
 
         return {V.detach(), delta.detach(), gamma.detach(), theta.detach(), vega.detach(), rho.detach()};
