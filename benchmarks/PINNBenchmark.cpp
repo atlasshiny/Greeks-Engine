@@ -1,13 +1,13 @@
-    #include <benchmark/benchmark.h>
-    #include <torch/torch.h>
-    #include "setup.hpp"
-    #include "models/BSMModel.hpp"
-    #include "models/PhysicsInformedNN.hpp"
+#include <benchmark/benchmark.h>
+#include <torch/torch.h>
+#include "setup.hpp"
+#include "models/BSMModel.hpp"
+#include "models/PhysicsInformedNN.hpp"
 
-    #ifdef __CUDACC__
+#if defined(USE_CUDA) || defined(TORCH_ENABLE_CUDA)
     #include <cuda_runtime.h>
     #include "gpu/BSMKernel.cuh"
-    #endif
+#endif
 
     // CPU BENCHMARKS (Always compiled to allow CPU vs GPU comparative plotting)
     static void BM_CPU_PINN_TargetGen(benchmark::State& state) {
@@ -33,7 +33,7 @@
         auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);
 
         PhysicsInformedNN model;
-        model.to(torch::kCPU);
+        model.to(torch::kCPU, torch::kFloat64);
 
         auto S = torch::rand({n, 1}, options) * 100.0 + 50.0;
         auto K = torch::rand({n, 1}, options) * 40.0 + 80.0;
@@ -44,7 +44,7 @@
         auto targets = PhysicsInformedNN::generate_targets(S, K, T, r, sigma, opt_type);
 
         for (auto _ : state) {
-            auto loss = model.compute_loss(S, K, T, r, sigma, opt_type, targets);
+            auto loss = model.compute_loss(S.clone(), K.clone(), T.clone(), r.clone(), sigma.clone(), opt_type, targets);
             benchmark::DoNotOptimize(loss.data_ptr());
         }
     }
@@ -55,7 +55,7 @@
         auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);
 
         PhysicsInformedNN model;
-        model.to(torch::kCPU);
+        model.to(torch::kCPU, torch::kFloat64);
 
         auto S = torch::rand({n, 1}, options) * 100.0 + 50.0;
         auto K = torch::rand({n, 1}, options) * 40.0 + 80.0;
@@ -64,17 +64,22 @@
         auto sigma = torch::full({n, 1}, 0.2, options);
 
         for (auto _ : state) {
-            auto greeks = model.evaluate_greeks(S, K, T, r, sigma);
+            auto greeks = model.evaluate_greeks(S.clone(), K.clone(), T.clone(), r.clone(), sigma.clone());
             benchmark::DoNotOptimize(&greeks);
         }
     }
     BENCHMARK(BM_CPU_PINN_EvaluateGreeks)->Range(100, 100000);
 
 
-    // GPU BENCHMARKS (Compiled only when NVCC CUDA compiler is active)
-    #ifdef __CUDACC__
+// GPU BENCHMARKS (Compiled when PyTorch CUDA build macro is active)
+#if defined(USE_CUDA) || defined(TORCH_ENABLE_CUDA)
 
     static void BM_GPU_PINN_TargetGen(benchmark::State& state) {
+        if (!torch::cuda::is_available()) {
+            state.SkipWithError("CUDA is not available at runtime.");
+            return;
+        }
+
         cudaEvent_t start_compute, stop_compute;
         cudaEventCreate(&start_compute);
         cudaEventCreate(&stop_compute);
@@ -103,6 +108,9 @@
         auto sigma = torch::full({n, 1}, 0.2, options);
         auto opt_type = torch::zeros({n, 1}, torch::TensorOptions().dtype(torch::kInt32).device(torch::kCUDA));
 
+        // Runtime check to confirm memory resides on CUDA before execution
+        TORCH_CHECK(S.is_cuda(), "Target tensor 'S' is not located on CUDA device!");
+
         for (auto _ : state) {
             // Record CUDA start
             cudaDeviceSynchronize();
@@ -130,6 +138,11 @@
     BENCHMARK(BM_GPU_PINN_TargetGen)->Range(100, 10000000)->UseManualTime();
 
     static void BM_GPU_PINN_ComputeLoss(benchmark::State& state) {
+        if (!torch::cuda::is_available()) {
+            state.SkipWithError("CUDA is not available at runtime.");
+            return;
+        }
+
         cudaEvent_t start_compute, stop_compute;
         cudaEventCreate(&start_compute);
         cudaEventCreate(&stop_compute);
@@ -140,7 +153,7 @@
         constexpr int warmup_size = 1000;
         auto warmup_options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA);
         PhysicsInformedNN warmup_model;
-        warmup_model.to(torch::kCUDA);
+        warmup_model.to(torch::kCUDA, torch::kFloat64);
 
         auto S_warm = torch::rand({warmup_size, 1}, warmup_options) * 100.0 + 50.0;
         auto K_warm = torch::rand({warmup_size, 1}, warmup_options) * 40.0 + 80.0;
@@ -150,12 +163,12 @@
         auto opt_warm = torch::zeros({warmup_size, 1}, torch::TensorOptions().dtype(torch::kInt32).device(torch::kCUDA));
         auto targets_warm = PhysicsInformedNN::generate_targets(S_warm, K_warm, T_warm, r_warm, sig_warm, opt_warm);
 
-        warmup_model.compute_loss(S_warm, K_warm, T_warm, r_warm, sig_warm, opt_warm, targets_warm);
+        warmup_model.compute_loss(S_warm.clone(), K_warm.clone(), T_warm.clone(), r_warm.clone(), sig_warm.clone(), opt_warm, targets_warm);
         cudaDeviceSynchronize();
 
         // Allocate Model and Input Tensors
         PhysicsInformedNN model;
-        model.to(torch::kCUDA);
+        model.to(torch::kCUDA, torch::kFloat64);
 
         auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA);
         auto S = torch::rand({n, 1}, options) * 100.0 + 50.0;
@@ -166,11 +179,13 @@
         auto opt_type = torch::zeros({n, 1}, torch::TensorOptions().dtype(torch::kInt32).device(torch::kCUDA));
         auto targets = PhysicsInformedNN::generate_targets(S, K, T, r, sigma, opt_type);
 
+        TORCH_CHECK(S.is_cuda() && targets.is_cuda(), "Inputs must reside on CUDA device!");
+
         for (auto _ : state) {
             cudaDeviceSynchronize();
             cudaEventRecord(start_compute, 0);
 
-            auto loss = model.compute_loss(S, K, T, r, sigma, opt_type, targets);
+            auto loss = model.compute_loss(S.clone(), K.clone(), T.clone(), r.clone(), sigma.clone(), opt_type, targets);
 
             cudaDeviceSynchronize();
             cudaEventRecord(stop_compute, 0);
@@ -189,6 +204,11 @@
     BENCHMARK(BM_GPU_PINN_ComputeLoss)->Range(100, 1000000)->UseManualTime();
 
     static void BM_GPU_PINN_EvaluateGreeks(benchmark::State& state) {
+        if (!torch::cuda::is_available()) {
+            state.SkipWithError("CUDA is not available at runtime.");
+            return;
+        }
+
         cudaEvent_t start_compute, stop_compute;
         cudaEventCreate(&start_compute);
         cudaEventCreate(&stop_compute);
@@ -199,7 +219,7 @@
         constexpr int warmup_size = 1000;
         auto warmup_options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA);
         PhysicsInformedNN warmup_model;
-        warmup_model.to(torch::kCUDA);
+        warmup_model.to(torch::kCUDA, torch::kFloat64);
 
         auto S_warm = torch::rand({warmup_size, 1}, warmup_options) * 100.0 + 50.0;
         auto K_warm = torch::rand({warmup_size, 1}, warmup_options) * 40.0 + 80.0;
@@ -207,11 +227,11 @@
         auto r_warm = torch::full({warmup_size, 1}, 0.05, warmup_options);
         auto sig_warm = torch::full({warmup_size, 1}, 0.2, warmup_options);
 
-        warmup_model.evaluate_greeks(S_warm, K_warm, T_warm, r_warm, sig_warm);
+        warmup_model.evaluate_greeks(S_warm.clone(), K_warm.clone(), T_warm.clone(), r_warm.clone(), sig_warm.clone());
         cudaDeviceSynchronize();
 
         PhysicsInformedNN model;
-        model.to(torch::kCUDA);
+        model.to(torch::kCUDA, torch::kFloat64);
 
         auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA);
         auto S = torch::rand({n, 1}, options) * 100.0 + 50.0;
@@ -220,11 +240,13 @@
         auto r = torch::full({n, 1}, 0.05, options);
         auto sigma = torch::full({n, 1}, 0.2, options);
 
+        TORCH_CHECK(S.is_cuda(), "Input tensor 'S' is not located on CUDA device!");
+
         for (auto _ : state) {
             cudaDeviceSynchronize();
             cudaEventRecord(start_compute, 0);
 
-            auto greeks = model.evaluate_greeks(S, K, T, r, sigma);
+            auto greeks = model.evaluate_greeks(S.clone(), K.clone(), T.clone(), r.clone(), sigma.clone());
 
             cudaDeviceSynchronize();
             cudaEventRecord(stop_compute, 0);
@@ -242,7 +264,7 @@
     }
     BENCHMARK(BM_GPU_PINN_EvaluateGreeks)->Range(100, 1000000)->UseManualTime();
 
-    #endif
+#endif
 
 // Main entry point for benchmark executable with exception handling
 int main(int argc, char** argv) {
@@ -250,11 +272,15 @@ int main(int argc, char** argv) {
         ::benchmark::Initialize(&argc, argv);
         if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
 
-    #ifdef __CUDACC__
+#if defined(USE_CUDA) || defined(TORCH_ENABLE_CUDA)
         if (!torch::cuda::is_available()) {
-            std::cerr << "[WARNING] CUDA is not available via PyTorch! Skipping GPU benchmarks.\n";
+            std::cerr << "[WARNING] CUDA support is compiled in PyTorch, but no CUDA GPU was detected at runtime!\n";
+        } else {
+            std::cout << "[INFO] CUDA is active. Found " << torch::cuda::device_count() << " device(s).\n";
         }
-    #endif
+#else
+        std::cout << "[INFO] Compiled in CPU-only mode.\n";
+#endif
 
         ::benchmark::RunSpecifiedBenchmarks();
         ::benchmark::Shutdown();
