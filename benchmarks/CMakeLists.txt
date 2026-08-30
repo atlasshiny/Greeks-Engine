@@ -68,12 +68,6 @@ if(CUDAToolkit_FOUND)
             $<$<COMPILE_LANGUAGE:CXX>:/Zc:preprocessor>
         )
     endif()
-
-else()
-    target_link_libraries(pinn_benchmark PRIVATE
-        benchmark::benchmark_main
-        ${TORCH_LIBRARIES}
-    )
 endif()
 
 # WINDOWS DLL RESOLUTION & RUN TARGETS FOR PINN BENCHMARK
