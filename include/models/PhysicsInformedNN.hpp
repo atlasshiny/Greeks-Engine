@@ -17,6 +17,38 @@ struct PredictedGreeks {
     torch::Tensor rho;   // dV / dr
 };
 
+class PINNTrainer {
+public:
+    PINNTrainer(torch::Tensor S, torch::Tensor K, 
+                 torch::Tensor T, torch::Tensor r, torch::Tensor sigma, 
+                 torch::Tensor opt_type, float lr = 1e-3)
+        : model_(PhysicsInformedNN()), S_(S), K_(K), T_(T), r_(r), sigma_(sigma), 
+          opt_type_(opt_type), optimizer_(model_.parameters(), torch::optim::AdamOptions(lr)) {}
+
+    void train(int epochs = 1000) {
+        for (int epoch = 0; epoch < epochs; ++epoch) {
+            optimizer_.zero_grad();
+            auto loss = model_.compute_loss(S_, K_, T_, r_, sigma_, opt_type_);
+            loss.backward();
+            optimizer_.step();
+
+            if (epoch % 100 == 0) {
+                std::cout << "Epoch [" << epoch << "/" << epochs << "], Loss: " << loss.item<double>() << std::endl;
+            }
+        }
+    }
+
+private:
+    PhysicsInformedNN model_;
+    torch::Tensor S_;
+    torch::Tensor K_;
+    torch::Tensor T_;
+    torch::Tensor r_;
+    torch::Tensor sigma_;
+    torch::Tensor opt_type_;
+    torch::optim::Adam optimizer_;
+};
+
 class PhysicsInformedNN : public torch::nn::Module {
 public:
     PhysicsInformedNN()
@@ -167,4 +199,27 @@ public:
 
 private:
     torch::nn::Linear fc1{nullptr}, fc2{nullptr}, fc3{nullptr};
+
+    // Private training/saving methods and seperate training class to avoid accidental training/model saving
+    void train_model(torch::Tensor S, torch::Tensor K, torch::Tensor T, 
+                     torch::Tensor r, torch::Tensor sigma, 
+                     torch::Tensor opt_type, int epochs = 1000, float lr = 1e-3) 
+    {
+        auto optimizer = torch::optim::Adam(this->parameters(), torch::optim::AdamOptions(lr));
+
+        for (int epoch = 0; epoch < epochs; ++epoch) {
+            optimizer.zero_grad();
+            auto loss = compute_loss(S, K, T, r, sigma, opt_type);
+            loss.backward();
+            optimizer.step();
+
+            if (epoch % 100 == 0) {
+                std::cout << "Epoch [" << epoch << "/" << epochs << "], Loss: " << loss.item<double>() << std::endl;
+            }
+        }
+    }
+
+    void save_model(const std::string& path) {
+        torch::save(this, path);
+    }
 };
