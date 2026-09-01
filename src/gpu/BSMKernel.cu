@@ -101,13 +101,13 @@ void launchBSMPricingKernel(const Option* h_options, const MarketParams* h_mktpa
 
 // Torch Kernels
 __global__ void computeBSMPricingTensorKernel(
-    const double* __restrict__ S,
-    const double* __restrict__ K,
-    const double* __restrict__ T,
-    const double* __restrict__ r,
-    const double* __restrict__ sigma,
+    const float* __restrict__ S,
+    const float* __restrict__ K,
+    const float* __restrict__ T,
+    const float* __restrict__ r,
+    const float* __restrict__ sigma,
     const int* __restrict__ option_type,
-    double* __restrict__ results,
+    float* __restrict__ results,
     int n) 
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -122,13 +122,13 @@ __global__ void computeBSMPricingTensorKernel(
 
 // Direct launcher: Operates directly on existing GPU VRAM allocations
 void launchBSMPricingTensorKernel(
-    const double* d_S, 
-    const double* d_K, 
-    const double* d_T, 
-    const double* d_r, 
-    const double* d_sigma, 
+    const float* d_S, 
+    const float* d_K, 
+    const float* d_T, 
+    const float* d_r, 
+    const float* d_sigma, 
     const int* d_option_type,
-    double* d_results, 
+    float* d_results, 
     int n,
     cudaStream_t stream) 
 {
