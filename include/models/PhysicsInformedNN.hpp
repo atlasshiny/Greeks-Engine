@@ -17,38 +17,6 @@ struct PredictedGreeks {
     torch::Tensor rho;   // dV / dr
 };
 
-class PINNTrainer {
-public:
-    PINNTrainer(torch::Tensor S, torch::Tensor K, 
-                 torch::Tensor T, torch::Tensor r, torch::Tensor sigma, 
-                 torch::Tensor opt_type, float lr = 1e-3)
-        : model_(PhysicsInformedNN()), S_(S), K_(K), T_(T), r_(r), sigma_(sigma), 
-          opt_type_(opt_type), optimizer_(model_.parameters(), torch::optim::AdamOptions(lr)) {}
-
-    void train(int epochs = 1000) {
-        for (int epoch = 0; epoch < epochs; ++epoch) {
-            optimizer_.zero_grad();
-            auto loss = model_.compute_loss(S_, K_, T_, r_, sigma_, opt_type_);
-            loss.backward();
-            optimizer_.step();
-
-            if (epoch % 100 == 0) {
-                std::cout << "Epoch [" << epoch << "/" << epochs << "], Loss: " << loss.item<double>() << std::endl;
-            }
-        }
-    }
-
-private:
-    PhysicsInformedNN model_;
-    torch::Tensor S_;
-    torch::Tensor K_;
-    torch::Tensor T_;
-    torch::Tensor r_;
-    torch::Tensor sigma_;
-    torch::Tensor opt_type_;
-    torch::optim::Adam optimizer_;
-};
-
 class PhysicsInformedNN : public torch::nn::Module {
 public:
     PhysicsInformedNN()
@@ -56,10 +24,10 @@ public:
         : fc1(register_module("fc1", torch::nn::Linear(5, 64))),
           fc2(register_module("fc2", torch::nn::Linear(64, 64))),
           fc3(register_module("fc3", torch::nn::Linear(64, 1))) {
-            // Ensure the model operates in double precision
-            fc1->to(torch::kFloat64);
-            fc2->to(torch::kFloat64);
-            fc3->to(torch::kFloat64);
+            // Ensure the model operates in float32 precision for consistency with CUDA operations
+            fc1->to(torch::kFloat32);
+            fc2->to(torch::kFloat32);
+            fc3->to(torch::kFloat32);
           }
 
     torch::Tensor forward(torch::Tensor x) {
@@ -74,7 +42,7 @@ public:
         const torch::Tensor& sigma, const torch::Tensor& opt_type) 
     {
         int n = S.size(0);
-        auto options = torch::TensorOptions().dtype(torch::kFloat64).device(S.device());
+        auto options = torch::TensorOptions().dtype(torch::kFloat32).device(S.device());
         auto target_prices = torch::empty({n, 1}, options);
 
         // ONLY execute custom CUDA kernel if input tensors reside on GPU
@@ -83,9 +51,9 @@ public:
         #ifdef USE_CUDA
             cudaStream_t stream = c10::cuda::getCurrentCUDAStream().stream();
             launchBSMPricingTensorKernel(
-                S.data_ptr<double>(), K.data_ptr<double>(), T.data_ptr<double>(),
-                r.data_ptr<double>(), sigma.data_ptr<double>(), opt_type.data_ptr<int>(),
-                target_prices.data_ptr<double>(), n, stream
+                S.data_ptr<float>(), K.data_ptr<float>(), T.data_ptr<float>(),
+                r.data_ptr<float>(), sigma.data_ptr<float>(), opt_type.data_ptr<int>(),
+                target_prices.data_ptr<float>(), n, stream
             );
         #else
             TORCH_CHECK(false, "Tensor is on CUDA, but project compiled without CUDA support!");
@@ -93,21 +61,21 @@ public:
 
         } else {
             // CPU fallback execution
-            auto S_a = S.accessor<double, 2>();
-            auto K_a = K.accessor<double, 2>();
-            auto T_a = T.accessor<double, 2>();
-            auto r_a = r.accessor<double, 2>();
-            auto sig_a = sigma.accessor<double, 2>();
+            auto S_a = S.accessor<float, 2>();
+            auto K_a = K.accessor<float, 2>();
+            auto T_a = T.accessor<float, 2>();
+            auto r_a = r.accessor<float, 2>();
+            auto sig_a = sigma.accessor<float, 2>();
             auto opt_a = opt_type.accessor<int, 2>();
-            auto out_a = target_prices.accessor<double, 2>();
+            auto out_a = target_prices.accessor<float, 2>();
 
             #pragma omp parallel for
             for (int i = 0; i < n; ++i) {
                 double d1 = BSMMath::d1(S_a[i][0], K_a[i][0], T_a[i][0], r_a[i][0], sig_a[i][0]);
                 double d2 = BSMMath::d2(d1, sig_a[i][0], T_a[i][0]);
-                out_a[i][0] = (opt_a[i][0] == 0) 
+                out_a[i][0] = static_cast<float>((opt_a[i][0] == 0) 
                     ? BSMMath::callPrice(S_a[i][0], K_a[i][0], T_a[i][0], r_a[i][0], d1, d2)
-                    : BSMMath::putPrice(S_a[i][0], K_a[i][0], T_a[i][0], r_a[i][0], d1, d2);
+                    : BSMMath::putPrice(S_a[i][0], K_a[i][0], T_a[i][0], r_a[i][0], d1, d2));
             }
         }   
         return target_prices;
@@ -127,7 +95,7 @@ public:
         }
 
         // Concatenate raw inputs, then make the concatenated block track gradients
-        auto input = torch::cat({S, K, T, r, sigma}, /*dim=*/1);
+        auto input = torch::cat({S, K, T, r, sigma}, /*dim=*/1).detach();
         input.requires_grad_(true);
 
         auto V = forward(input);
@@ -166,7 +134,7 @@ public:
         torch::Tensor S, torch::Tensor K, torch::Tensor T, 
         torch::Tensor r, torch::Tensor sigma) 
     {
-        auto input = torch::cat({S, K, T, r, sigma}, /*dim=*/1);
+        auto input = torch::cat({S, K, T, r, sigma}, /*dim=*/1).detach();
         input.requires_grad_(true);
 
         auto V = forward(input);
@@ -199,19 +167,24 @@ public:
 
 private:
     torch::nn::Linear fc1{nullptr}, fc2{nullptr}, fc3{nullptr};
+};
 
-    // Private training/saving methods and seperate training class to avoid accidental training/model saving
-    void train_model(torch::Tensor S, torch::Tensor K, torch::Tensor T, 
-                     torch::Tensor r, torch::Tensor sigma, 
-                     torch::Tensor opt_type, int epochs = 1000, float lr = 1e-3) 
-    {
-        auto optimizer = torch::optim::Adam(this->parameters(), torch::optim::AdamOptions(lr));
+// PINN Trainer class to encapsulate training logic and avoid accidental training in the main model class
 
+class PINNTrainer {
+public:
+    PINNTrainer(PhysicsInformedNN& model, torch::Tensor S, torch::Tensor K, 
+                 torch::Tensor T, torch::Tensor r, torch::Tensor sigma, 
+                 torch::Tensor opt_type, float lr = 1e-3)
+        : model_(model), S_(S), K_(K), T_(T), r_(r), sigma_(sigma), 
+          opt_type_(opt_type), optimizer_(model_.parameters(), torch::optim::AdamOptions(lr)) {}
+
+    void train(int epochs = 1000) {
         for (int epoch = 0; epoch < epochs; ++epoch) {
-            optimizer.zero_grad();
-            auto loss = compute_loss(S, K, T, r, sigma, opt_type);
+            optimizer_.zero_grad();
+            auto loss = model_.compute_loss(S_, K_, T_, r_, sigma_, opt_type_);
             loss.backward();
-            optimizer.step();
+            optimizer_.step();
 
             if (epoch % 100 == 0) {
                 std::cout << "Epoch [" << epoch << "/" << epochs << "], Loss: " << loss.item<double>() << std::endl;
@@ -220,6 +193,17 @@ private:
     }
 
     void save_model(const std::string& path) {
-        torch::save(this, path);
+        auto model_ptr = std::make_shared<PhysicsInformedNN>(this->model_);    
+        torch::save(model_ptr, path);
     }
+
+private:
+    PhysicsInformedNN& model_;
+    torch::Tensor S_;
+    torch::Tensor K_;
+    torch::Tensor T_;
+    torch::Tensor r_;
+    torch::Tensor sigma_;
+    torch::Tensor opt_type_;
+    torch::optim::Adam optimizer_;
 };
