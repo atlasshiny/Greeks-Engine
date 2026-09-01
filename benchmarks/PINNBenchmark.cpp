@@ -12,7 +12,7 @@
     // CPU BENCHMARKS (Always compiled to allow CPU vs GPU comparative plotting)
     static void BM_CPU_PINN_TargetGen(benchmark::State& state) {
         int n = static_cast<int>(state.range());
-        auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);
+        auto options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
 
         auto S = torch::rand({n, 1}, options) * 100.0 + 50.0;
         auto K = torch::rand({n, 1}, options) * 40.0 + 80.0;
@@ -30,10 +30,10 @@
 
     static void BM_CPU_PINN_ComputeLoss(benchmark::State& state) {
         int n = static_cast<int>(state.range());
-        auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);
+        auto options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
 
         PhysicsInformedNN model;
-        model.to(torch::kCPU, torch::kFloat64);
+        model.to(torch::kCPU, torch::kFloat32);
 
         auto S = torch::rand({n, 1}, options) * 100.0 + 50.0;
         auto K = torch::rand({n, 1}, options) * 40.0 + 80.0;
@@ -52,10 +52,10 @@
 
     static void BM_CPU_PINN_EvaluateGreeks(benchmark::State& state) {
         int n = static_cast<int>(state.range());
-        auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);
+        auto options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
 
         PhysicsInformedNN model;
-        model.to(torch::kCPU, torch::kFloat64);
+        model.to(torch::kCPU, torch::kFloat32);
 
         auto S = torch::rand({n, 1}, options) * 100.0 + 50.0;
         auto K = torch::rand({n, 1}, options) * 40.0 + 80.0;
@@ -88,7 +88,7 @@
 
         // WARM-UP BEFORE BENCHMARKING
         constexpr int warmup_size = 1000;
-        auto warmup_options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA);
+        auto warmup_options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA);
         auto S_warm = torch::rand({warmup_size, 1}, warmup_options) * 100.0 + 50.0;
         auto K_warm = torch::rand({warmup_size, 1}, warmup_options) * 40.0 + 80.0;
         auto T_warm = torch::rand({warmup_size, 1}, warmup_options) * 1.5 + 0.1;
@@ -100,7 +100,7 @@
         cudaDeviceSynchronize();
 
         // Allocate GPU Tensors directly in VRAM
-        auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA);
+        auto options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA);
         auto S = torch::rand({n, 1}, options) * 100.0 + 50.0;
         auto K = torch::rand({n, 1}, options) * 40.0 + 80.0;
         auto T = torch::rand({n, 1}, options) * 1.5 + 0.1;
@@ -151,9 +151,9 @@
 
         // WARM-UP BEFORE BENCHMARKING
         constexpr int warmup_size = 1000;
-        auto warmup_options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA);
+        auto warmup_options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA);
         PhysicsInformedNN warmup_model;
-        warmup_model.to(torch::kCUDA, torch::kFloat64);
+        warmup_model.to(torch::kCUDA, torch::kFloat32);
 
         auto S_warm = torch::rand({warmup_size, 1}, warmup_options) * 100.0 + 50.0;
         auto K_warm = torch::rand({warmup_size, 1}, warmup_options) * 40.0 + 80.0;
@@ -168,9 +168,9 @@
 
         // Allocate Model and Input Tensors
         PhysicsInformedNN model;
-        model.to(torch::kCUDA, torch::kFloat64);
+        model.to(torch::kCUDA, torch::kFloat32);
 
-        auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA);
+        auto options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA);
         auto S = torch::rand({n, 1}, options) * 100.0 + 50.0;
         auto K = torch::rand({n, 1}, options) * 40.0 + 80.0;
         auto T = torch::rand({n, 1}, options) * 1.5 + 0.1;
@@ -217,9 +217,9 @@
 
         // WARM-UP BEFORE BENCHMARKING
         constexpr int warmup_size = 1000;
-        auto warmup_options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA);
+        auto warmup_options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA);
         PhysicsInformedNN warmup_model;
-        warmup_model.to(torch::kCUDA, torch::kFloat64);
+        warmup_model.to(torch::kCUDA, torch::kFloat32);
 
         auto S_warm = torch::rand({warmup_size, 1}, warmup_options) * 100.0 + 50.0;
         auto K_warm = torch::rand({warmup_size, 1}, warmup_options) * 40.0 + 80.0;
@@ -231,9 +231,9 @@
         cudaDeviceSynchronize();
 
         PhysicsInformedNN model;
-        model.to(torch::kCUDA, torch::kFloat64);
+        model.to(torch::kCUDA, torch::kFloat32);
 
-        auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA);
+        auto options = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA);
         auto S = torch::rand({n, 1}, options) * 100.0 + 50.0;
         auto K = torch::rand({n, 1}, options) * 40.0 + 80.0;
         auto T = torch::rand({n, 1}, options) * 1.5 + 0.1;
